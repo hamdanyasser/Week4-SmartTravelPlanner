@@ -6,6 +6,116 @@ tradeoffs in human terms.
 
 ---
 
+## ML classifier foundation (2026-04-27)
+
+### What changed
+
+Added the travel-style classifier the brief requires, end to end.
+
+- `data/destinations.csv` — 131 hand-labeled destinations across the six
+  classes (Adventure 25, Culture 24, Relaxation 22, Budget 20, Luxury 20,
+  Family 20). Each row has 9 numeric features. Labels follow the rule
+  "single dominant style", documented in the README.
+- `backend/app/ml/__init__.py` — empty package marker.
+- `backend/app/ml/train_classifier.py` — the trainer. Loads the CSV,
+  builds three `StandardScaler -> classifier` Pipelines (Logistic
+  Regression, Random Forest, Gradient Boosting), runs 5-fold stratified
+  CV on each, runs `GridSearchCV` on Random Forest, picks the winner by
+  mean macro-F1, prints a per-class classification report on
+  cross-validated predictions, saves the winner with joblib, and appends
+  every experiment to `results.csv`.
+- `backend/app/ml/results.csv` — append-only experiment log. New columns:
+  `tuned` and `winner` so the run history is self-explanatory.
+- `backend/app/ml/model.joblib` — the saved winner pipeline. Currently
+  Logistic Regression at mean macro-F1 0.959.
+- `backend/requirements.txt` — added `pandas==2.2.3`,
+  `scikit-learn==1.5.2`, `joblib==1.4.2` (pinned).
+- `.gitignore` — replaced the stale `artifacts/*.joblib` rule with a
+  pattern that ignores any future joblib files under `backend/app/ml/`
+  *except* the canonical `model.joblib`. The current artifact is small
+  enough (2.7 KB) and is a brief deliverable, so it stays tracked.
+- `README.md` — added an "ML — travel-style classifier" section
+  covering the dataset, labeling rule, pipeline, the three classifiers,
+  why we tune Random Forest, and the latest results table.
+- `REQUIREMENTS_CHECKLIST.md` — rows 1.1–1.10 moved to DONE.
+
+### Why these shapes
+
+**Pipeline with the scaler inside.** The brief is explicit about leakage.
+Putting `StandardScaler` inside the Pipeline means `cross_validate` and
+`GridSearchCV` re-fit the scaler on each training fold — the validation
+fold never leaks into the scaler's mean/std. This is the cleanest way to
+defend against leakage on Saturday.
+
+**Three classifiers, side-by-side.** LogReg is a low-variance baseline,
+Random Forest handles non-linear feature interactions without much
+tuning, Gradient Boosting is the standard stronger ensemble comparison.
+Picking exactly these three is defensible on a 131-row tabular problem.
+
+**Tune Random Forest specifically.** Tree ensembles have intuitive knobs
+(`n_estimators`, `max_depth`, `min_samples_split`), and on small datasets
+they over-fit without those controls. Tuning RF gives the most
+interesting search space for the same compute.
+
+**Winner selection by macro-F1, not "always save the tuned one".** The
+brief says "save the winner" — so the script picks the actual winner
+across all four candidates (3 baselines + 1 tuned). This run, untuned
+Logistic Regression beats the tuned Random Forest (0.959 vs 0.951). The
+script is honest about that and saves the LR pipeline.
+
+**`cross_val_predict` for the per-class report.** Each prediction comes
+from a fold where the row was held out, so the per-class numbers are
+honest — not a self-evaluation on training data.
+
+**Dataset under `data/` at repo root, not under `backend/app/ml/data/`.**
+Hands-on instruction from the user. The trainer resolves the path from
+its own location (`Path(__file__).resolve().parents[2] / "data" / ...`)
+so it works whether you run it from the repo root or from `backend/`.
+
+**Single dominant-style labeling rule.** Every destination is labeled by
+its single dominant story, even when other features are non-trivial.
+Banff has a high `family_score` but is `Adventure`. Kyoto has some
+hiking but is `Culture`. This rule keeps labels defensible row by row.
+
+### What we deliberately did not do
+
+- No deep tuning of LogReg or GB. The brief says "tune at least one";
+  we did. Doing all three would be busywork on a 131-row dataset.
+- No SMOTE / class-weight rebalancing. The dataset is mildly imbalanced
+  (Adventure 25 vs Family 20) but the per-class F1 floor is already
+  ~0.95. Adding rebalancing now would be solving a non-problem.
+- No feature engineering beyond the nine documented features.
+- No pickling of the entire training script's state — only the fitted
+  pipeline.
+- No FastAPI integration yet. The model is on disk; loading it in the
+  lifespan handler and exposing it via `Depends()` lands when we wire up
+  the `classify_travel_style` agent tool.
+- No tests for the trainer. Coming when we set up `pytest` + ruff/black
+  in the next milestone.
+
+### How to verify
+
+```powershell
+backend\.venv\Scripts\python -m app.ml.train_classifier
+```
+
+Should print three baseline rows, one tuned row, the winner's per-class
+report, and "Saving winner (logistic_regression) to ...". Re-running
+appends new rows to `results.csv` without overwriting old ones.
+
+To smoke-test the saved model on the golden-demo profile (warm + hiking
++ less touristy + mid budget):
+
+```powershell
+cd backend
+.\.venv\Scripts\python -c "import joblib, pandas as pd; m = joblib.load('app/ml/model.joblib'); print(m.predict(pd.DataFrame([{'budget_level':3,'climate_warmth':4,'hiking_score':5,'culture_score':3,'tourism_level':3,'luxury_score':2,'family_score':3,'safety_score':5,'avg_daily_cost_usd':120}])))"
+```
+
+Expected output: `['Adventure']` — which is what Madeira (the golden
+top-pick) would land under.
+
+---
+
 ## Foundation audit fixes (2026-04-27)
 
 ### What I checked

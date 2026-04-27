@@ -28,9 +28,13 @@ Thumbs.db
 .vscode/
 .idea/
 
-# ML artifacts (kept out of git on purpose; we'll gitignore the large model file
-# and check in a small results.csv later)
-backend/app/ml/artifacts/*.joblib
+# ML artifacts.
+# We commit the canonical model.joblib + results.csv (they are deliverables in
+# the brief and the artifact is small). Anything else under ml/ that ends in
+# .joblib or .pkl is local-only.
+backend/app/ml/**/*.joblib
+!backend/app/ml/model.joblib
+backend/app/ml/**/*.pkl
 
 # Docker
 .docker/

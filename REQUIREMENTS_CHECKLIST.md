@@ -14,16 +14,16 @@ of what we plan to do and why — the long version goes in `CODE_REVIEW_NOTES.md
 
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
-| 1.1 | 100–200 destinations, hand-labeled | `backend/app/ml/data/destinations.csv` | TODO | One CSV holds the dataset; labeling rules go into the README so we can defend them. |
-| 1.2 | 6 travel-style labels (Adventure, Relaxation, Culture, Budget, Luxury, Family) | `backend/app/ml/labels.py` | TODO | Labels are an `Enum` so the rest of the code never uses raw strings. |
-| 1.3 | sklearn `Pipeline` (preprocessing inside) | `backend/app/ml/pipeline.py` | TODO | Pipeline = preprocessing + model in one object → no leakage. |
-| 1.4 | Compare ≥3 classifiers with k-fold CV | `backend/app/ml/train.py` | TODO | We try LogReg, RandomForest, GradientBoosting and compare. |
-| 1.5 | Accuracy + macro-F1 mean & std | `backend/app/ml/train.py` | TODO | k-fold gives us the std; we record both metrics per fold. |
-| 1.6 | Tune ≥1 model | `backend/app/ml/tune.py` | TODO | `GridSearchCV` on the winner; search space justified in the README. |
-| 1.7 | Per-class metrics (class imbalance honesty) | `backend/app/ml/train.py` | TODO | We print a classification report — averages alone hide rare classes. |
-| 1.8 | `results.csv` — every experiment logged | `backend/app/ml/results.csv` | TODO | Append-only log of model + params + metrics + timestamp. |
-| 1.9 | Save best model with joblib | `backend/app/ml/artifacts/model.joblib` | TODO | Single artifact loaded once at startup (singleton, see §11). |
-| 1.10 | Pinned deps + fixed seeds | `backend/requirements.txt`, `backend/app/ml/train.py` | IN_PROGRESS | Pin versions, set `random_state=42` everywhere. |
+| 1.1 | 100–200 destinations, hand-labeled | `data/destinations.csv` | DONE | 131 destinations, 9 features, 6 labels. Labeling rules documented in README §ML. |
+| 1.2 | 6 travel-style labels (Adventure, Relaxation, Culture, Budget, Luxury, Family) | `backend/app/schemas/trip_brief.py` (`TravelStyle` enum), `backend/app/ml/train_classifier.py` (`LABELS`) | DONE | The enum from Day 1 is the shared vocabulary; the trainer validates the CSV against it. |
+| 1.3 | sklearn `Pipeline` (preprocessing inside) | `backend/app/ml/train_classifier.py` (`build_pipelines`) | DONE | Each candidate is `StandardScaler + classifier` in one Pipeline so CV refits the scaler per fold (no leakage). |
+| 1.4 | Compare ≥3 classifiers with k-fold CV | `backend/app/ml/train_classifier.py` (`cross_val_summary`) | DONE | LogReg, RandomForest, GradientBoosting via `StratifiedKFold(k=5)`. |
+| 1.5 | Accuracy + macro-F1 mean & std | `backend/app/ml/results.csv` | DONE | Both metrics recorded per model with std. |
+| 1.6 | Tune ≥1 model | `backend/app/ml/train_classifier.py` (`tune_random_forest`) | DONE | `GridSearchCV` over `n_estimators × max_depth × min_samples_split`. Justification in README. |
+| 1.7 | Per-class metrics (class imbalance honesty) | `backend/app/ml/train_classifier.py` (`per_class_report`) | DONE | `classification_report` on `cross_val_predict` of the winner. |
+| 1.8 | `results.csv` — every experiment logged | `backend/app/ml/results.csv` | DONE | One row per candidate per run, plus the tuned variant; `winner=yes` flag. |
+| 1.9 | Save best model with joblib | `backend/app/ml/model.joblib` | DONE | Winner is whichever candidate has the highest mean macro-F1 — currently logistic_regression (0.959). |
+| 1.10 | Pinned deps + fixed seeds | `backend/requirements.txt`, `backend/app/ml/train_classifier.py` | DONE | `pandas==2.2.3`, `scikit-learn==1.5.2`, `joblib==1.4.2`; `random_state=42` everywhere. |
 
 ## 2. RAG Tool
 

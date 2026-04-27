@@ -176,10 +176,18 @@ These are non-negotiable; the brief calls them out explicitly.
 - `backend/.env` is **not** tracked (verified). `backend/.env.example` is
   the tracked template.
 
-**What is still missing** (all the AI-shaped parts):
-- Real ML classifier and trained model artifact.
+**Day 2 status** — ML classifier shipped:
+- `data/destinations.csv` — 131 hand-labeled rows, 9 features, 6 labels.
+- `backend/app/ml/train_classifier.py` — Pipeline, 3 baselines, k-fold CV,
+  GridSearchCV on RF, per-class report, joblib save.
+- `backend/app/ml/results.csv` — every experiment logged.
+- `backend/app/ml/model.joblib` — current winner: Logistic Regression at
+  mean macro-F1 0.959.
+
+**What is still missing**:
 - RAG knowledge base + pgvector index.
-- LangGraph agent with the three tools.
+- LangGraph agent with the three tools (model is trained but not yet
+  loaded via lifespan/Depends).
 - Two-model routing and token/cost logging.
 - DB persistence (the Postgres container is up but the backend never
   connects).

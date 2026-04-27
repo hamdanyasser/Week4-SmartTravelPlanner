@@ -1,0 +1,132 @@
+destination,country,budget_level,climate_warmth,hiking_score,culture_score,tourism_level,luxury_score,family_score,safety_score,avg_daily_cost_usd,travel_style
+Patagonia,Argentina,3,2,5,2,2,2,2,4,140,Adventure
+Madeira,Portugal,3,4,5,3,3,2,3,5,120,Adventure
+Akureyri,Iceland,4,1,5,3,2,3,2,5,200,Adventure
+Pokhara,Nepal,1,3,5,4,3,2,3,3,40,Adventure
+Bled,Slovenia,3,3,5,4,4,3,4,5,130,Adventure
+Queenstown,New Zealand,4,3,5,2,4,4,3,5,200,Adventure
+Lofoten,Norway,4,2,5,3,2,3,3,5,220,Adventure
+Faroe Islands,Faroe Islands,4,2,5,3,1,3,2,5,210,Adventure
+Theth,Albania,2,3,5,3,1,1,2,4,55,Adventure
+Kazbegi,Georgia,2,2,5,3,2,2,3,4,60,Adventure
+Karakol,Kyrgyzstan,1,2,5,3,1,1,2,3,40,Adventure
+Huaraz,Peru,2,2,5,4,2,2,2,3,55,Adventure
+Monteverde,Costa Rica,3,4,5,3,3,3,4,4,140,Adventure
+Ilulissat,Greenland,5,1,5,3,1,4,2,5,300,Adventure
+Cradle Mountain,Australia,4,3,5,2,3,3,3,5,180,Adventure
+Banff,Canada,4,2,5,3,4,4,5,5,200,Adventure
+Yosemite,United States,3,3,5,3,4,3,4,5,160,Adventure
+Paro,Bhutan,4,3,5,5,2,4,3,5,250,Adventure
+Imlil,Morocco,2,3,5,3,2,2,3,4,55,Adventure
+Brasov,Romania,2,3,5,4,3,2,4,4,65,Adventure
+Ulaanbaatar,Mongolia,2,2,5,4,2,2,3,3,70,Adventure
+Torres del Paine,Chile,3,2,5,2,2,3,2,4,160,Adventure
+Drakensberg,South Africa,2,3,5,3,2,2,3,3,90,Adventure
+Annapurna,Nepal,1,3,5,3,2,1,2,3,35,Adventure
+Interlaken,Switzerland,5,3,5,3,4,4,4,5,250,Adventure
+Maldives,Maldives,5,5,1,1,3,5,3,5,400,Relaxation
+Mahe,Seychelles,5,5,2,2,3,5,3,4,350,Relaxation
+Ubud,Bali,2,5,3,4,4,3,3,4,75,Relaxation
+Nadi,Fiji,4,5,2,2,3,4,4,4,200,Relaxation
+Santorini,Greece,4,5,2,4,5,4,3,5,220,Relaxation
+Phuket,Thailand,2,5,2,3,5,3,4,4,90,Relaxation
+Mauritius,Mauritius,4,5,2,3,3,4,4,4,200,Relaxation
+Bora Bora,French Polynesia,5,5,1,1,3,5,3,5,500,Relaxation
+Tahiti,French Polynesia,5,5,2,2,3,5,3,5,450,Relaxation
+Aruba,Aruba,4,5,1,2,4,4,4,5,250,Relaxation
+Barbados,Barbados,4,5,2,3,4,4,4,5,260,Relaxation
+Paphos,Cyprus,3,5,3,4,3,3,4,5,140,Relaxation
+Krabi,Thailand,2,5,3,2,4,3,4,4,80,Relaxation
+Zanzibar,Tanzania,3,5,2,3,3,3,3,3,130,Relaxation
+Lombok,Indonesia,2,5,3,2,3,2,3,3,55,Relaxation
+Boracay,Philippines,2,5,2,2,4,3,4,3,80,Relaxation
+Hvar,Croatia,3,5,3,3,4,4,3,5,160,Relaxation
+Tulum,Mexico,3,5,2,3,4,4,3,3,160,Relaxation
+Gili Trawangan,Indonesia,2,5,2,2,3,2,3,3,55,Relaxation
+Ko Samui,Thailand,3,5,2,3,4,4,3,4,130,Relaxation
+Goa,India,2,5,2,3,4,3,4,3,70,Relaxation
+Cancun,Mexico,3,5,1,2,5,4,4,3,170,Relaxation
+Rome,Italy,4,4,2,5,5,4,4,5,200,Culture
+Paris,France,5,3,2,5,5,5,4,4,250,Culture
+Kyoto,Japan,4,3,3,5,5,4,4,5,220,Culture
+Florence,Italy,4,4,2,5,5,4,3,5,190,Culture
+Athens,Greece,3,5,3,5,4,3,4,4,140,Culture
+Istanbul,Turkey,2,4,2,5,4,3,4,3,90,Culture
+Vienna,Austria,4,3,3,5,4,4,4,5,200,Culture
+Prague,Czech Republic,3,3,3,5,5,3,4,5,140,Culture
+Cairo,Egypt,1,5,2,5,4,2,3,2,55,Culture
+Jerusalem,Israel,3,4,3,5,4,3,3,3,160,Culture
+Marrakech,Morocco,2,4,2,5,4,3,3,3,70,Culture
+Beijing,China,3,3,3,5,4,3,4,4,120,Culture
+Edinburgh,Scotland,3,2,4,5,4,3,4,5,170,Culture
+Cusco,Peru,2,2,4,5,4,2,3,3,75,Culture
+Lisbon,Portugal,3,4,3,5,4,3,4,5,150,Culture
+Porto,Portugal,3,4,3,5,4,3,4,5,140,Culture
+Barcelona,Spain,4,4,2,5,5,4,4,5,200,Culture
+Madrid,Spain,3,4,2,5,4,4,4,5,170,Culture
+Berlin,Germany,3,3,3,5,4,3,3,5,170,Culture
+Saint Petersburg,Russia,3,2,2,5,3,4,3,3,140,Culture
+Mexico City,Mexico,2,4,3,5,4,3,3,3,80,Culture
+Hanoi,Vietnam,1,4,2,5,4,2,3,3,40,Culture
+Varanasi,India,1,4,2,5,3,1,2,2,30,Culture
+Krakow,Poland,2,3,3,5,4,3,4,5,90,Culture
+Chiang Mai,Thailand,1,4,3,4,4,2,4,4,40,Budget
+Tbilisi,Georgia,1,3,3,4,3,2,3,4,45,Budget
+Sofia,Bulgaria,1,3,3,4,3,2,3,4,55,Budget
+Bucharest,Romania,1,3,3,4,3,2,3,4,55,Budget
+Belgrade,Serbia,1,3,2,4,3,2,3,4,60,Budget
+Skopje,North Macedonia,1,3,3,4,2,1,3,4,50,Budget
+Phnom Penh,Cambodia,1,5,2,4,3,1,3,3,35,Budget
+La Paz,Bolivia,1,2,4,4,3,1,2,3,40,Budget
+Quito,Ecuador,1,3,4,4,3,2,3,3,50,Budget
+Yerevan,Armenia,1,3,3,4,3,2,3,4,55,Budget
+Bishkek,Kyrgyzstan,1,3,4,3,2,1,2,3,35,Budget
+Vientiane,Laos,1,5,2,4,3,1,3,3,40,Budget
+Mostar,Bosnia,1,4,3,4,3,2,3,4,55,Budget
+Cluj-Napoca,Romania,1,3,3,4,3,2,4,4,55,Budget
+Pristina,Kosovo,1,3,3,3,2,1,3,3,45,Budget
+Tirana,Albania,1,4,3,4,3,2,3,4,55,Budget
+Hue,Vietnam,1,4,2,4,3,2,3,3,35,Budget
+Luang Prabang,Laos,1,4,3,5,3,2,3,3,45,Budget
+Sarajevo,Bosnia,1,3,3,5,3,2,3,4,55,Budget
+Cuenca,Ecuador,1,3,3,4,3,2,3,3,50,Budget
+Monaco,Monaco,5,4,1,4,4,5,3,5,500,Luxury
+Dubai,United Arab Emirates,5,5,2,3,5,5,4,5,400,Luxury
+St. Moritz,Switzerland,5,1,4,3,4,5,4,5,500,Luxury
+Aspen,United States,5,2,4,3,4,5,4,5,450,Luxury
+St. Barts,France,5,5,1,2,3,5,3,5,600,Luxury
+Capri,Italy,5,5,2,4,5,5,3,5,400,Luxury
+Lake Como,Italy,5,3,3,4,4,5,4,5,350,Luxury
+Singapore,Singapore,4,5,2,4,5,5,5,5,250,Luxury
+Vail,United States,5,2,4,3,4,5,4,5,400,Luxury
+Mykonos,Greece,5,5,2,3,5,5,3,5,350,Luxury
+Cannes,France,5,4,2,4,5,5,3,5,350,Luxury
+Maui,United States,5,5,3,3,4,5,4,5,400,Luxury
+Verbier,Switzerland,5,1,4,3,3,5,4,5,500,Luxury
+Courchevel,France,5,1,4,3,3,5,4,5,500,Luxury
+Hong Kong,Hong Kong,5,4,3,4,5,5,4,5,300,Luxury
+Doha,Qatar,5,5,1,4,4,5,4,5,350,Luxury
+Reykjavik,Iceland,5,1,4,4,4,5,3,5,300,Luxury
+Beverly Hills,United States,5,4,1,4,5,5,4,5,400,Luxury
+Geneva,Switzerland,5,3,3,4,4,5,4,5,400,Luxury
+Cabo San Lucas,Mexico,5,5,2,2,4,5,3,3,300,Luxury
+Orlando,United States,4,5,1,3,5,4,5,4,200,Family
+San Diego,United States,4,4,2,4,4,4,5,5,250,Family
+Lake Tahoe,United States,4,3,4,2,4,4,5,5,250,Family
+Costa del Sol,Spain,3,5,2,3,5,4,5,4,160,Family
+Disneyland Paris,France,4,3,1,4,5,4,5,5,250,Family
+Tokyo,Japan,4,4,2,5,5,4,5,5,250,Family
+Niagara Falls,Canada,3,3,2,3,5,3,5,5,160,Family
+Yellowstone,United States,3,3,4,3,4,3,5,5,180,Family
+Algarve,Portugal,3,5,3,3,4,3,5,5,140,Family
+Mallorca,Spain,3,5,3,3,5,4,5,5,180,Family
+Tenerife,Spain,3,5,4,3,5,3,5,5,170,Family
+Gold Coast,Australia,4,5,3,3,5,4,5,5,250,Family
+Billund,Denmark,4,2,2,3,4,4,5,5,250,Family
+Copenhagen,Denmark,4,3,2,5,4,4,5,5,250,Family
+Munich,Germany,4,3,3,5,4,4,5,5,200,Family
+Kissimmee,United States,3,5,1,2,5,3,5,4,180,Family
+Anaheim,United States,4,5,1,3,5,4,5,4,250,Family
+Williamsburg,United States,3,4,2,5,4,3,5,5,180,Family
+Salzburg,Austria,4,3,3,5,4,4,5,5,200,Family
+Helsinki,Finland,4,2,3,5,3,4,5,5,250,Family

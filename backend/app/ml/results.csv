@@ -1,0 +1,5 @@
+timestamp,model,accuracy_mean,accuracy_std,f1_macro_mean,f1_macro_std,tuned,params,winner
+2026-04-27T19:14:12,logistic_regression,0.9618,0.0243,0.9589,0.0296,no,{},yes
+2026-04-27T19:14:12,random_forest,0.9538,0.0615,0.9506,0.0666,no,{},no
+2026-04-27T19:14:12,gradient_boosting,0.9464,0.0523,0.9430,0.0578,no,{},no
+2026-04-27T19:14:12,random_forest_tuned,,,0.9506,,yes,"{""clf__max_depth"": null, ""clf__min_samples_split"": 2, ""clf__n_estimators"": 200}",no
