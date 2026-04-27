@@ -1,4 +1,4 @@
-# TripPilot Black
+# AtlasBrief — AI Travel Briefing Room
 
 A Smart Travel Planner with a premium "AI travel briefing room" feel.
 

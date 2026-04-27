@@ -1,7 +1,7 @@
 services:
   db:
     image: pgvector/pgvector:pg16
-    container_name: trippilot_db
+    container_name: atlasbrief_db
     env_file:
       - ./backend/.env
     ports:
@@ -17,7 +17,7 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: trippilot_backend
+    container_name: atlasbrief_backend
     env_file:
       - ./backend/.env
     ports:
@@ -32,7 +32,7 @@ services:
   frontend:
     build:
       context: ./frontend
-    container_name: trippilot_frontend
+    container_name: atlasbrief_frontend
     environment:
       VITE_API_BASE_URL: http://localhost:8000
     ports:

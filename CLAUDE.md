@@ -1,4 +1,4 @@
-# CLAUDE.md — TripPilot Black
+# CLAUDE.md — AtlasBrief — AI Travel Briefing Room
 
 This file is the canonical project briefing. **Future Claude must read this
 first**, before touching any code. It captures the product vision, the brief,
@@ -11,9 +11,9 @@ guessing.
 
 ## 1. Product vision
 
-**TripPilot Black** is a premium **AI travel briefing room** for the Week 4
-Smart Travel Planner project (SE Factory AIE Bootcamp). The product is meant
-to feel like a calm executive briefing, not a chat window — the user shows up
+**AtlasBrief — AI Travel Briefing Room** is the Week 4 Smart Travel
+Planner project (SE Factory AIE Bootcamp). The product is meant to feel
+like a calm executive briefing, not a chat window — the user shows up
 with a fuzzy travel idea and walks out with a defended recommendation.
 
 ---

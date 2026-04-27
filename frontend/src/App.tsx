@@ -28,7 +28,7 @@ export default function App() {
   return (
     <div className="briefing-room">
       <header className="briefing-header">
-        <span className="briefing-eyebrow">TRIPPILOT // BLACK</span>
+        <span className="briefing-eyebrow">ATLASBRIEF // BRIEFING ROOM</span>
         <h1>The AI travel briefing room</h1>
         <p className="briefing-subtitle">
           Day 1 skeleton — wired to a stub backend. The Decision Tension Board

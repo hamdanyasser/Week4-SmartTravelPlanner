@@ -1,4 +1,4 @@
-# Requirements Checklist — TripPilot Black
+# Requirements Checklist — AtlasBrief
 
 This file maps every requirement from the Week 4 Smart Travel Planner brief
 to a concrete location in this repo and its current build status.

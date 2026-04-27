@@ -1,8 +1,53 @@
-# Code Review Notes - TripPilot Black
+# Code Review Notes - AtlasBrief
 
 A plain-language log of what changed and why. New entries go on top.
 Read this before diving into the code if you want the project shape and
 tradeoffs in human terms.
+
+---
+
+## Product rename: TripPilot Black -> AtlasBrief (2026-04-27)
+
+### What changed
+
+The product name went from **TripPilot Black** to **AtlasBrief — AI Travel
+Briefing Room**. The unique feature name (**Decision Tension Board**) is
+unchanged. No architecture, no folder layout, no routes, no module names,
+no Python imports moved.
+
+User-facing strings updated:
+
+- `README.md`, `CLAUDE.md`, `CODE_REVIEW_NOTES.md`,
+  `REQUIREMENTS_CHECKLIST.md`, `docs/DAY1_CODE_WALKTHROUGH.md` — titles
+  and body references.
+- `backend/app/config.py` — `app_name` default is now `"AtlasBrief"`.
+- `backend/.env.example` and `backend/.env` — `APP_NAME=AtlasBrief`.
+- `frontend/index.html` — browser tab title.
+- `frontend/package.json` — npm package name (`atlasbrief-frontend`).
+- `frontend/src/App.tsx` — eyebrow tag now reads
+  `ATLASBRIEF // BRIEFING ROOM`.
+- `docker-compose.yml` — container labels now `atlasbrief_db`,
+  `atlasbrief_backend`, `atlasbrief_frontend` (previously `trippilot_*`).
+
+### What was deliberately kept
+
+- **Postgres credentials** (`POSTGRES_USER=trippilot`,
+  `POSTGRES_DB=trippilot`, the matching `DATABASE_URL`) — renaming these
+  would orphan the existing `pgdata` volume and break authentication on
+  any DB that has already been initialised. They are not user-facing.
+  We will revisit at first DB migration if needed.
+- **Folder layout** (`backend/app/...`, `frontend/src/...`) — never
+  carried the brand.
+- **Module names and Python imports** — never carried the brand.
+- **Routes** (`/health`, `/api/v1/trip-briefs`) — `trip-briefs` is a
+  generic noun for the response type, not a brand reference.
+
+### Sanity checks run
+
+- `python -c "from app.main import app; ..."` -> app.title now `AtlasBrief`,
+  routes `/health` and `/api/v1/trip-briefs` still mounted.
+- `docker compose config --quiet` -> OK.
+- `npm run build` -> OK, 32 modules transformed.
 
 ---
 
@@ -167,7 +212,7 @@ before the app containers could start. The compose file itself validates with
 
 ### What changed
 
-The repo started as a runnable shell of TripPilot Black. It does not implement
+The repo started as a runnable shell of AtlasBrief. It does not implement
 AI features yet. Its purpose is to prove the local round trip:
 
 React form -> FastAPI route -> Pydantic response -> Decision Tension Board UI.

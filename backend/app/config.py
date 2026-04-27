@@ -23,7 +23,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "TripPilot Black"
+    app_name: str = "AtlasBrief"
     app_env: str = "development"
     app_debug: bool = True
 

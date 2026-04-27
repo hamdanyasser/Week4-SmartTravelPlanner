@@ -1,4 +1,4 @@
-# Day 1 Code Walkthrough — TripPilot Black
+# Day 1 Code Walkthrough — AtlasBrief — AI Travel Briefing Room
 
 This document is for **you** — the human who vibe-coded Day 1 and now has to
 defend it on Saturday. Every section is written in plain English. If a
@@ -11,7 +11,7 @@ before review.
 
 ## 1. What the project currently does
 
-TripPilot Black is a **Smart Travel Planner**. The unique product idea is
+AtlasBrief is a **Smart Travel Planner**. The unique product idea is
 the **Decision Tension Board** — instead of just suggesting a destination,
 the app shows the *tension* between:
 
@@ -186,7 +186,7 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8",
         case_sensitive=False, extra="ignore",
     )
-    app_name: str = "TripPilot Black"
+    app_name: str = "AtlasBrief"   # full product: "AtlasBrief — AI Travel Briefing Room"
     app_env: str = "development"
     app_debug: bool = True
     cors_allow_origins: str = "http://localhost:5173"
