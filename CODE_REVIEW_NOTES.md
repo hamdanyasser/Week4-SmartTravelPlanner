@@ -1,128 +1,133 @@
-# Code Review Notes — TripPilot Black
+# Code Review Notes - TripPilot Black
 
 A plain-language log of what changed and why. New entries go on top.
-Read this if you want to understand the *shape* of the project before
-diving into the code.
+Read this before diving into the code if you want the project shape and
+tradeoffs in human terms.
 
 ---
 
-## Day 1 — Project skeleton (2026-04-27)
+## Foundation audit fixes (2026-04-27)
+
+### What I checked
+
+- `docker compose config` parses successfully.
+- The backend starts locally with Uvicorn.
+- `GET /health` returns `{"status":"ok"}`.
+- `POST /api/v1/trip-briefs` returns the stub `TripBriefResponse`.
+- The frontend builds with `npm run build`.
+- The frontend client points at the backend through `VITE_API_BASE_URL`, with a
+  local `http://localhost:8000` fallback for Day 1 development.
+- `backend/.env` is ignored and not tracked.
+- `backend/.env.example` exists.
+- `main.py` is small and only wires the app together.
+- No runtime `os.getenv` calls are scattered outside settings.
+
+Full `docker compose up --build` was attempted, but Docker Desktop failed while
+pulling the `pgvector/pgvector:pg16` image with a containerd input/output error
+before the app containers could start. The compose file itself validates with
+`docker compose config --quiet`, and the backend/frontend were verified locally.
+
+### What I fixed
+
+- `docker-compose.yml` no longer hardcodes the local Postgres password. The
+  database and backend now read local environment values from `backend/.env`.
+  This keeps tracked config clean while preserving the local Docker workflow.
+- `backend/.env.example` now includes the Postgres variables needed by Docker
+  Compose: `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`.
+- `backend/app/config.py` now uses the same local database placeholder as
+  `.env.example`, so the defaults do not drift from documented setup.
+- The frontend TypeScript build no longer leaves generated `vite.config.js`,
+  `vite.config.d.ts`, or root `*.tsbuildinfo` files in the repo. Build metadata
+  is directed into `node_modules/.tmp`, and `*.tsbuildinfo` is ignored as a
+  backstop.
+- `README.md` now matches the actual Day 1 files. It no longer claims planned
+  `agent/`, `ml/`, `rag/`, `db/`, `auth/`, or `webhooks/` folders already
+  exist.
+
+### What I deliberately did not change
+
+- No ML, RAG, agent, auth, webhook, Supabase, or deployment work.
+- No app redesign.
+- No removal of the Decision Tension Board.
+- No fake production secrets. `backend/.env` stays local and untracked.
+
+---
+
+## Day 1 - Project skeleton (2026-04-27)
 
 ### What changed
 
-The repo went from empty to a runnable shell of TripPilot Black. We did not
-implement any of the AI features yet — those land in later days. What we
-*did* do is build the scaffolding that everything else will plug into,
-and we wired up enough end-to-end plumbing to prove the round-trip works.
+The repo started as a runnable shell of TripPilot Black. It does not implement
+AI features yet. Its purpose is to prove the local round trip:
 
-Files added:
+React form -> FastAPI route -> Pydantic response -> Decision Tension Board UI.
 
-- `REQUIREMENTS_CHECKLIST.md` — a row for every required deliverable in
-  the brief, tagged with where it will live and its current status.
+Files and folders in the Day 1 skeleton:
+
+- `REQUIREMENTS_CHECKLIST.md` - a row for every required deliverable in the
+  brief, with current status.
 - `README.md`, `.gitignore`, `docker-compose.yml`.
-- `backend/` — a small FastAPI app:
-  - `app/main.py` — builds the FastAPI app, installs CORS, mounts routers,
-    and registers a lifespan handler that is empty for now.
-  - `app/config.py` — a typed `Settings` class powered by `pydantic-settings`.
-  - `app/api/routes/health.py` — `GET /health`.
-  - `app/api/routes/trip_briefs.py` — `POST /api/v1/trip-briefs`.
-  - `app/schemas/trip_brief.py` — the `TripBriefResponse` Pydantic model
-    and a hardcoded golden-demo stub.
-  - `Dockerfile`, `requirements.txt`, `.env.example`, `.env`.
-- `frontend/` — Vite + React + TypeScript:
-  - `src/App.tsx` — a one-page "briefing room" that calls the stub
-    endpoint and renders the four Decision Tension Board cards.
-  - `src/api/client.ts` + `src/api/types.ts` — a thin fetch wrapper and
-    a hand-written mirror of the backend schema.
-  - `src/styles.css` — the dark "briefing room" styling.
+- `backend/` - a small FastAPI app:
+  - `app/main.py` - creates the FastAPI app, installs CORS, and mounts routers.
+  - `app/config.py` - typed settings via `pydantic-settings`.
+  - `app/api/routes/health.py` - `GET /health`.
+  - `app/api/routes/trip_briefs.py` - `POST /api/v1/trip-briefs`.
+  - `app/schemas/trip_brief.py` - request/response models and the Day 1 stub.
+  - `Dockerfile`, `requirements.txt`, `.env.example`.
+- `frontend/` - Vite + React + TypeScript:
+  - `src/App.tsx` - one-page briefing room UI.
+  - `src/api/client.ts` and `src/api/types.ts` - backend client and TS schema
+    mirror.
+  - `src/styles.css` - current dark briefing-room styling.
   - `Dockerfile`, `package.json`, `vite.config.ts`, `tsconfig*.json`.
-- `docker-compose.yml` — three services: `db` (Postgres + pgvector),
-  `backend` (FastAPI), `frontend` (Vite dev). Postgres data lives in a
-  named volume so embeddings will survive restarts.
 
-### Why these specific shapes
+### Why these shapes
 
-**Folder layout — split by concern.** The brief explicitly calls out
-"not one 600-line `main.py`". Even on Day 1 we already have separate
-modules for routes, schemas, and (soon) agent / ml / rag / db / auth /
-webhooks. Each new feature gets a folder; nothing leaks into `main.py`.
+**Small `main.py`.** The app entry point only builds the FastAPI app, registers
+middleware, and mounts routers. Route logic and schemas live elsewhere so future
+phases do not pile into one file.
 
-**`Settings` via `pydantic-settings`.** The brief's "no magic strings"
-rule means *every* env var enters the program through one typed class.
-We added `get_settings()` wrapped in `lru_cache` so the rest of the code
-gets a singleton without a global. Day 1 only needs four settings, but
-the pattern is set.
+**Settings through one module.** Environment-backed values enter through
+`backend/app/config.py`. This keeps env handling discoverable and prevents
+configuration from scattering across route code.
 
-**Lifespan handler exists but is empty.** Day 1 doesn't need any
-process-level singletons yet — but the brief says the DB engine, ML
-model, embedding model, and LLM client must live there. So we put the
-hook in now, even empty, so the wiring is obvious for whoever adds the
-first singleton.
+**`TripBriefResponse` before the real agent.** The response schema is the
+contract between the future agent and the React UI. Locking the shape early lets
+the frontend prove the Decision Tension Board without pretending ML or RAG
+already exists.
 
-**`TripBriefResponse` shipped before the agent.** The schema *is* the
-contract between the agent and the React UI. Locking it on Day 1 means
-the frontend can be designed against a stable shape while the ML / RAG /
-agent come online behind it. If we'd waited, every backend change would
-ripple into the UI.
+**Stub endpoint.** The Day 1 endpoint returns a hardcoded golden-demo payload
+for Madeira versus Costa Rica. That is intentional scaffolding, not the final
+recommendation engine.
 
-**`TravelStyle` is an `Enum`.** This is the same six-label set the ML
-classifier will predict (Adventure, Relaxation, Culture, Budget, Luxury,
-Family). Defining it once here means the frontend, the agent, and the
-classifier all share one vocabulary — no string typos drifting between
-modules.
+**Docker Compose.** The local stack includes Postgres with pgvector, FastAPI,
+and Vite. The database is present for later phases but the backend does not
+connect to it yet.
 
-**Stub endpoint returns a hardcoded golden-demo payload.** The point of
-Day 1 is to prove the round-trip — fetch in the browser → FastAPI route
-→ Pydantic-validated response → rendered card. The stub uses Madeira as
-the top pick and Costa Rica as the counterfactual. These choices aren't
-arbitrary: Madeira is genuinely warm, hiking-rich, and less-touristy in
-July; Costa Rica is the "obvious" pick that breaks the $1,500 budget
-once flights are factored in. When the real agent goes live, we want to
-know whether it can recover something similar.
+### What remains for later phases
 
-**Decision Tension Board UI on Day 1.** Even with stub data, the four
-cards (Dream Fit / Reality Pressure / Final Verdict / Counterfactual)
-are already laid out. This forces every later change to keep producing
-data that fits this shape, which is the whole point of the product.
+- Add persistence only when the first stored entity lands.
+- Add ML only when the Decision Tree phase starts.
+- Add RAG and the agent only after the local API and UI contract stay stable.
+- Add tests, linting, and formatting infrastructure before broad feature work.
 
-**Docker compose with three services.** A reviewer running
-`docker compose up` on Day 1 already gets Postgres (with pgvector
-ready), FastAPI, and the React UI. The DB is unused today, but it's the
-same database we will use for users / agent runs / tool calls /
-embeddings — one DB for everything, as the brief requires.
+### How to verify the skeleton
 
-### What we deliberately did not do
-
-- **No agent, no LLM client, no LangGraph yet.** Those would be wasted
-  motion until the schema and skeleton are solid.
-- **No SQLAlchemy / Alembic / pgvector code yet.** The DB container is
-  up but the backend doesn't connect. We add that the day we add the
-  first persisted entity (users), so the work is paid for by a feature.
-- **No auth, no webhook, no streaming.** Each is its own day.
-- **No tests yet.** The test plan is in `REQUIREMENTS_CHECKLIST.md`;
-  tests land alongside the code they cover, starting Day 2.
-- **No linter / pre-commit yet.** Same reason — adding lint
-  infrastructure with five files of code is busywork. We add it before
-  the first feature commit.
-
-### How to verify Day 1
-
-```bash
+```powershell
+Copy-Item backend\.env.example backend\.env
 docker compose up --build
 ```
 
-- `curl http://localhost:8000/health` → `{"status":"ok"}`
-- `curl -X POST http://localhost:8000/api/v1/trip-briefs \
-    -H "Content-Type: application/json" \
-    -d '{"query":"two weeks in July, $1500, warm, hiking, not too touristy"}'`
-  returns a fully-shaped `TripBriefResponse`.
-- Open <http://localhost:5173> and click *Generate briefing* — the four
-  Decision Tension Board cards render with the stub data.
+Then verify:
 
-### What's next (Day 2 preview)
+```powershell
+Invoke-RestMethod http://localhost:8000/health
+Invoke-RestMethod `
+  -Uri http://localhost:8000/api/v1/trip-briefs `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"query":"two weeks in July, 1500 budget, warm hiking, not too touristy"}'
+```
 
-- Stand up SQLAlchemy 2.x async with the first migration.
-- Define `users`, `agent_runs`, `tool_calls`, and `embeddings` tables.
-- Add the lifespan-managed DB engine and the `get_session` dependency.
-- Add the first real test: schema round-trip for `TripBriefResponse`.
-- Add `ruff` + `black` + a pre-commit config.
+Open <http://localhost:5173> and generate the briefing. The four Decision
+Tension Board sections should render from the stub response.
