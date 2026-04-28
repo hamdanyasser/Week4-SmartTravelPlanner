@@ -254,6 +254,7 @@ Manual fallback verification:
 ```powershell
 cd backend
 .\.venv\Scripts\python -m app.rag.ingest_documents
+.\.venv\Scripts\python -m app.rag.smoke_test
 ```
 
 Manual retrieval probes are stored in `MANUAL_RETRIEVAL_TEST_QUERIES`:
@@ -261,6 +262,62 @@ Manual retrieval probes are stored in `MANUAL_RETRIEVAL_TEST_QUERIES`:
 - `Madeira warm levada island hiking less touristy`
 - `Slovenia Julian Alps Bohinj Soca hiking culture`
 - `Costa Rica rainforest green season budget pressure`
+
+### Live Postgres Verification Status
+
+`docker compose config --quiet` passes, so the Compose file is valid. On this
+machine, the live Postgres smoke test is blocked before app code runs because
+Docker Desktop is not reachable:
+
+```text
+open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified
+```
+
+That means the unproven part is environmental: starting the
+`pgvector/pgvector:pg16` container and exercising `ingest_documents.py --db`
+against a live database. The RAG pipeline itself is still locally verified by
+`app.rag.smoke_test`.
+
+When Docker Desktop is running, use this sequence from the repo root:
+
+```powershell
+docker compose config --quiet
+docker compose up -d db
+docker compose exec db pg_isready -U trippilot -d trippilot
+
+cd backend
+$env:DATABASE_URL="postgresql+asyncpg://trippilot:change-me-local-only@localhost:5432/trippilot"
+.\.venv\Scripts\python -m app.rag.ingest_documents --db --reset
+```
+
+Then run one DB-backed retrieval query:
+
+```powershell
+@'
+import asyncio
+from app.db.session import get_session_factory, dispose_engine
+from app.rag.retriever import retrieve_from_db
+from app.schemas.rag import DestinationKnowledgeQuery
+
+async def main():
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        response = await retrieve_from_db(
+            DestinationKnowledgeQuery(
+                query="Madeira warm levada island hiking less touristy",
+                top_k=3,
+            ),
+            session=session,
+        )
+        print(response.model_dump_json(indent=2))
+    await dispose_engine()
+
+asyncio.run(main())
+'@ | .\.venv\Scripts\python -
+```
+
+If your local `backend/.env` uses a different `POSTGRES_PASSWORD`, update the
+temporary `DATABASE_URL` to match it.
 
 ## Code review notes
 

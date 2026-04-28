@@ -30,9 +30,9 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
 | 2.1 | 10-15 destinations, 20-30 documents | `data/knowledge/` | DONE | 28 markdown docs across 14 destinations, each with destination/source metadata. |
-| 2.2 | Embeddings in Postgres via pgvector | `backend/app/models/document_chunk.py`, `backend/app/rag/ingest_documents.py` | DONE | pgvector table + DB ingest path built; deterministic local fallback verified when Postgres is unavailable. |
+| 2.2 | Embeddings in Postgres via pgvector | `backend/app/models/document_chunk.py`, `backend/app/rag/ingest_documents.py` | IN_PROGRESS | pgvector table + DB ingest path built; live ingest is blocked by Docker daemon unavailability on this machine. |
 | 2.3 | Justified chunk size + overlap | `backend/app/rag/chunking.py`, `README.md` | DONE | 900-character chunks with 150-character overlap; rationale documented in README. |
-| 2.4 | Tested retrieval with hand-written queries | `backend/app/rag/retriever.py` | DONE | Three manual retrieval probes pass on the local fallback index. |
+| 2.4 | Tested retrieval with hand-written queries | `backend/app/rag/retriever.py`, `backend/app/rag/smoke_test.py` | DONE | Three manual retrieval probes pass on the local fallback index; smoke test verifies the tool wrapper and schemas. |
 
 ## 3. Agent - Exactly 3 Tools
 
@@ -63,7 +63,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 5.2 | `users` table | `backend/app/db/models/user.py` | TODO | Owns runs and webhook destinations. |
 | 5.3 | `agent_runs` table | `backend/app/db/models/run.py` | TODO | One row per query: who, what, when, final answer. |
 | 5.4 | `tool_calls` table | `backend/app/db/models/tool_call.py` | TODO | One row per tool invocation: name, args, result, tokens, cost. |
-| 5.5 | `embeddings` table / pgvector chunks | `backend/app/models/document_chunk.py` | IN_PROGRESS | RAG chunks use `Vector(384)` + cosine index; broader app embedding table can be revisited with migrations. |
+| 5.5 | `embeddings` table / pgvector chunks | `backend/app/models/document_chunk.py` | IN_PROGRESS | RAG chunks use `Vector(384)` + cosine index; live table creation awaits a reachable Docker/Postgres environment. |
 | 5.6 | Alembic migrations | `backend/alembic/` | TODO | Schema changes are versioned, not improvised. |
 
 ## 6. Auth - Sign-Up and Login
@@ -100,9 +100,9 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 |---|---|---|---|---|
 | 9.1 | Backend container | `backend/Dockerfile` | IN_PROGRESS | Working skeleton image. |
 | 9.2 | Frontend container | `frontend/Dockerfile` | IN_PROGRESS | Working Vite dev image. |
-| 9.3 | Postgres + pgvector container | `docker-compose.yml` | IN_PROGRESS | Uses `pgvector/pgvector:pg16`. |
+| 9.3 | Postgres + pgvector container | `docker-compose.yml` | IN_PROGRESS | Compose config passes; live container start is blocked here because Docker Desktop is not reachable. |
 | 9.4 | Named Postgres volume | `docker-compose.yml` | IN_PROGRESS | `pgdata` volume keeps embeddings across restarts. |
-| 9.5 | One-command startup | `docker-compose.yml` | IN_PROGRESS | `docker compose up` brings the stack up when Docker is healthy. |
+| 9.5 | One-command startup | `docker-compose.yml` | IN_PROGRESS | `docker compose up` is configured; live startup still needs a running Docker daemon. |
 
 ## 10. Engineering Standards
 

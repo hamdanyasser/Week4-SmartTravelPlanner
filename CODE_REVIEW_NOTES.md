@@ -6,6 +6,62 @@ tradeoffs in human terms.
 
 ---
 
+## Day 2 RAG verification finalization (2026-04-28)
+
+### What I tried
+
+I made a bounded attempt to exercise the real Postgres + pgvector path.
+
+Commands attempted:
+
+```powershell
+docker compose config --quiet
+docker info --format '{{.ServerVersion}}'
+docker compose up -d db
+```
+
+Result:
+
+- `docker compose config --quiet` passed.
+- Docker daemon access failed before any container could start:
+  `open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified`.
+- `docker compose up -d db` failed for the same reason while trying to inspect
+  `pgvector/pgvector:pg16`.
+
+### What this means
+
+The blocker is machine-level Docker availability, not RAG Python code. The live
+DB path that remains unproven is:
+
+1. start the `pgvector/pgvector:pg16` service,
+2. enable `CREATE EXTENSION IF NOT EXISTS vector`,
+3. create the RAG tables,
+4. ingest markdown chunks into Postgres,
+5. run a DB-backed nearest-neighbor retrieval query.
+
+### What I added
+
+Added `backend/app/rag/smoke_test.py`, a small local smoke test that verifies:
+
+- DB/session/model modules import cleanly.
+- the markdown corpus loads and chunks,
+- deterministic fallback embeddings are produced,
+- `backend/app/tools/retrieve_destination_knowledge.py` validates input through
+  the current Pydantic schemas,
+- fallback retrieval returns results.
+
+Verification command:
+
+```powershell
+cd backend
+.\.venv\Scripts\python -m app.rag.smoke_test
+```
+
+Observed output included 28 documents, 14 destinations, 28 chunks, and a Madeira
+top result for the first manual retrieval query.
+
+---
+
 ## RAG and database foundation (2026-04-28)
 
 ### What changed

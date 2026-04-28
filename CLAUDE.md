@@ -200,6 +200,9 @@ These are non-negotiable; the brief calls them out explicitly.
   for the future allowlisted agent.
 - `backend/app/db/` and `backend/app/models/` - async SQLAlchemy foundation,
   pgvector init logic, source document model, and chunk embedding model.
+- Live Postgres/pgvector ingest is not yet exercised on this machine because
+  Docker Desktop is not reachable (`dockerDesktopLinuxEngine` pipe missing).
+  `backend/app/rag/smoke_test.py` verifies the deterministic fallback path.
 
 **What is still missing**:
 - LangGraph agent with the three tools (ML and RAG foundations exist, but the
