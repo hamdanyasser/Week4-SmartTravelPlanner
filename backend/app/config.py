@@ -36,6 +36,18 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://trippilot:change-me-local-only@db:5432/trippilot",
         description="Async SQLAlchemy URL. Used from Day 5 onward.",
     )
+    embedding_provider: str = Field(
+        default="deterministic",
+        description="RAG embedding provider. Day 2 uses deterministic fallback.",
+    )
+    embedding_dimension: int = Field(
+        default=384,
+        description="Embedding vector size. Must match the pgvector column.",
+    )
+    openai_api_key: str | None = Field(
+        default=None,
+        description="Future real embedding provider key. Not required on Day 2.",
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:

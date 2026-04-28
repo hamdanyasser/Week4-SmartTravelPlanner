@@ -6,6 +6,67 @@ tradeoffs in human terms.
 
 ---
 
+## RAG and database foundation (2026-04-28)
+
+### What changed
+
+Built the Day 2 RAG foundation without touching the frontend, the full agent,
+auth, webhooks, or the Decision Tension Board.
+
+- `data/knowledge/` now has 28 markdown destination documents across 14
+  destinations. Each document has frontmatter for `destination`,
+  `source_title`, and `source_type`.
+- `backend/app/rag/chunking.py` loads markdown, validates frontmatter, and
+  creates 900-character chunks with 150-character overlap.
+- `backend/app/rag/embeddings.py` defines a clean embedding interface and the
+  deterministic local fallback provider (`deterministic-hashing-v1`).
+- `backend/app/rag/ingest_documents.py` can verify the corpus locally or ingest
+  into Postgres/pgvector when the DB is available.
+- `backend/app/rag/retriever.py` performs top-k retrieval and includes three
+  manual retrieval probes.
+- `backend/app/schemas/rag.py` defines Pydantic input/output schemas for RAG.
+- `backend/app/tools/retrieve_destination_knowledge.py` is the tool-shaped
+  wrapper the future agent will allowlist.
+- `backend/app/db/session.py` and `backend/app/db/init_db.py` add the async
+  SQLAlchemy foundation and pgvector extension setup.
+- `backend/app/models/destination_document.py` and
+  `backend/app/models/document_chunk.py` define the source-doc and chunk tables;
+  chunks store metadata plus a `Vector(384)` embedding.
+- `backend/requirements.txt` now includes SQLAlchemy, asyncpg, and pgvector.
+
+### Why these shapes
+
+**Local fallback first.** Docker/Postgres was not reliable during the previous
+foundation audit, so the RAG path must be demo-safe without external services.
+The deterministic embedding provider lets us prove ingestion and retrieval
+locally while keeping the real pgvector path ready.
+
+**Metadata is stored with every chunk.** The future agent needs more than text;
+it needs to know which destination, source title, source type, and chunk index
+produced an answer. That is why the schema and database model keep metadata
+beside the content and embedding.
+
+**900 characters + 150 overlap.** These source docs are short briefs, not long
+articles. A 900-character chunk usually keeps one complete destination idea
+together while a 150-character overlap protects context at boundaries.
+
+**No full agent yet.** The retrieval tool exists, but LangGraph/LangChain,
+tool allowlisting, model routing, and synthesis are still later phases.
+
+### Verification
+
+```powershell
+cd backend
+.\.venv\Scripts\python -m compileall app
+.\.venv\Scripts\python -m app.rag.ingest_documents
+```
+
+Local fallback ingest returned 28 documents, 14 destinations, and 28 chunks.
+Manual retrieval probes returned results for Madeira, Slovenia, and Costa Rica
+queries using the deterministic fallback index.
+
+---
+
 ## Product rename: TripPilot Black -> AtlasBrief (2026-04-27)
 
 ### What changed

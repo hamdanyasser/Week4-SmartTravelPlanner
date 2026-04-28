@@ -14,3 +14,11 @@ pydantic-settings==2.5.2
 pandas==2.2.3
 scikit-learn==1.5.2
 joblib==1.4.2
+
+# --- Day 2 RAG / DB deps ---
+# SQLAlchemy: async ORM/session foundation for Postgres-backed app data.
+# asyncpg: async Postgres driver used by SQLAlchemy.
+# pgvector: SQLAlchemy Vector type and cosine-distance helpers.
+SQLAlchemy==2.0.36
+asyncpg==0.30.0
+pgvector==0.3.6

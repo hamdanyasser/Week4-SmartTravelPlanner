@@ -11,12 +11,13 @@ The unique product layer is the **Decision Tension Board**:
 
 ## Current phase
 
-Day 1 is a local skeleton. It proves that FastAPI and the React frontend can
-talk to each other using a stable `TripBriefResponse` contract.
+The local skeleton is working, the ML classifier foundation is built, and the
+Day 2 RAG foundation is now in place.
 
-Not implemented yet: ML, RAG, the agent, auth, webhooks, persistence, and
-deployment. The UI intentionally keeps the Decision Tension Board concept in
-place with stub data so later phases have a clear product shape to fill.
+Still not implemented yet: the full agent, auth, webhooks, user persistence,
+LLM routing, and deployment. The UI intentionally keeps the Decision Tension
+Board concept in place with stub data so later phases have a clear product
+shape to fill.
 
 ## Repository layout
 
@@ -26,7 +27,15 @@ place with stub data so later phases have a clear product shape to fill.
 |   |-- app/config.py        Typed settings, the only env access point
 |   |-- app/main.py          Small app factory and router registration
 |   |-- app/api/routes/      Health and trip-brief routes
-|   `-- app/schemas/         Pydantic request/response models
+|   |-- app/db/              Async SQLAlchemy session/init helpers
+|   |-- app/models/          RAG document + chunk tables
+|   |-- app/ml/              Travel-style classifier training/artifact
+|   |-- app/rag/             Chunking, embeddings, ingest, retrieval
+|   |-- app/schemas/         Pydantic request/response models
+|   `-- app/tools/           Tool wrappers for the future agent
+|-- data/
+|   |-- destinations.csv     Hand-labeled ML dataset
+|   `-- knowledge/           Markdown RAG corpus
 |-- frontend/                Vite + React + TypeScript skeleton
 |   `-- src/api/             Thin backend client and shared TS types
 |-- docker-compose.yml       Local Postgres, backend, and frontend services
@@ -34,8 +43,8 @@ place with stub data so later phases have a clear product shape to fill.
 `-- CODE_REVIEW_NOTES.md
 ```
 
-Planned folders like `agent/`, `ml/`, `rag/`, `db/`, `auth/`, and `webhooks/`
-do not exist yet. They should be added only when those phases start.
+Planned folders like `agent/`, `auth/`, `llm/`, and `webhooks/` do not exist
+yet. They should be added only when those phases start.
 
 ## Local setup
 
@@ -167,6 +176,91 @@ real-world destinations". This is exactly the honesty the brief asks for.
 The trained winner is saved to `backend/app/ml/model.joblib`. From Day 5
 the FastAPI lifespan handler will load it once at startup and expose it
 via a `Depends()` to the `classify_travel_style` agent tool.
+
+## RAG - Destination Knowledge Foundation
+
+### Corpus
+
+`data/knowledge/` contains **28 markdown documents** across **14 destinations**:
+Madeira, Costa Rica, Azores, Slovenia, Albania, Georgia, Japan Alps,
+Dolomites, Morocco, Vietnam, Greek Islands, Iceland, Peru, and the Canary
+Islands.
+
+Each file has frontmatter:
+
+```text
+---
+destination: Madeira
+source_title: Madeira Hiking and Levada Briefing
+source_type: tourism_board_note
+---
+```
+
+That metadata is stored with every chunk so the future agent can cite where a
+retrieved fact came from.
+
+### Chunking
+
+Chunking lives in `backend/app/rag/chunking.py`.
+
+- Chunk size: **900 characters**
+- Overlap: **150 characters**
+
+Why this size: the Day 2 documents are short destination briefs, so 900
+characters usually keeps one coherent travel idea together: route, season,
+budget pressure, or hiking fit. The 150-character overlap protects context
+when a warning or recommendation crosses a boundary. On the current corpus this
+creates **28 chunks** from 28 documents.
+
+### Embeddings
+
+Embeddings live behind the small interface in `backend/app/rag/embeddings.py`.
+
+Day 2 default: `deterministic-hashing-v1`, a local 384-dimensional hashing
+embedding. It uses no network and no secrets, so retrieval can be verified even
+when Docker/Postgres is unavailable. It is not a real semantic model; it is a
+demo-safe fallback that ranks lexical overlap repeatably.
+
+The real-provider placeholder is controlled by:
+
+```text
+EMBEDDING_PROVIDER=deterministic
+EMBEDDING_DIMENSION=384
+```
+
+### Database Design
+
+The Postgres/pgvector path is built but not required for local verification:
+
+- `backend/app/db/session.py` - async SQLAlchemy engine/session factory.
+- `backend/app/db/init_db.py` - enables `CREATE EXTENSION IF NOT EXISTS vector`.
+- `backend/app/models/destination_document.py` - source markdown document rows.
+- `backend/app/models/document_chunk.py` - chunk rows with `Vector(384)` and a
+  cosine index.
+- `backend/app/rag/ingest_documents.py` - embeds and stores chunks when a DB is
+  available.
+
+If Postgres is empty, retrieval returns an empty result instead of crashing. If
+database retrieval fails, the retriever falls back to the deterministic local
+index.
+
+### Retrieval
+
+Retrieval lives in `backend/app/rag/retriever.py` and the tool wrapper lives in
+`backend/app/tools/retrieve_destination_knowledge.py`.
+
+Manual fallback verification:
+
+```powershell
+cd backend
+.\.venv\Scripts\python -m app.rag.ingest_documents
+```
+
+Manual retrieval probes are stored in `MANUAL_RETRIEVAL_TEST_QUERIES`:
+
+- `Madeira warm levada island hiking less touristy`
+- `Slovenia Julian Alps Bohinj Soca hiking culture`
+- `Costa Rica rainforest green season budget pressure`
 
 ## Code review notes
 

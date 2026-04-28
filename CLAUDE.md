@@ -184,13 +184,29 @@ These are non-negotiable; the brief calls them out explicitly.
 - `backend/app/ml/model.joblib` — current winner: Logistic Regression at
   mean macro-F1 0.959.
 
+**Day 2 status - RAG foundation shipped:**
+- `data/knowledge/` - 28 markdown destination documents across 14
+  destinations.
+- `backend/app/rag/chunking.py` - markdown frontmatter parsing and
+  900-character chunks with 150-character overlap.
+- `backend/app/rag/embeddings.py` - deterministic local 384-dimensional
+  embedding fallback plus a future real-provider interface.
+- `backend/app/rag/ingest_documents.py` - local fallback ingest verification
+  and Postgres/pgvector ingest path.
+- `backend/app/rag/retriever.py` - top-k retrieval with DB-first/local-fallback
+  behavior and three manual retrieval probes.
+- `backend/app/schemas/rag.py` - Pydantic schemas for RAG tool input/output.
+- `backend/app/tools/retrieve_destination_knowledge.py` - tool-shaped wrapper
+  for the future allowlisted agent.
+- `backend/app/db/` and `backend/app/models/` - async SQLAlchemy foundation,
+  pgvector init logic, source document model, and chunk embedding model.
+
 **What is still missing**:
-- RAG knowledge base + pgvector index.
-- LangGraph agent with the three tools (model is trained but not yet
-  loaded via lifespan/Depends).
+- LangGraph agent with the three tools (ML and RAG foundations exist, but the
+  agent loop and allowlist are not wired yet).
 - Two-model routing and token/cost logging.
-- DB persistence (the Postgres container is up but the backend never
-  connects).
+- Full DB persistence for users, agent_runs, and tool_calls.
+- Alembic migrations.
 - Auth (register/login/JWT/`current_user`).
 - Webhook delivery.
 - Tests, linter, pre-commit, CI.
