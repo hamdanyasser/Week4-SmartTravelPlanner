@@ -22,3 +22,15 @@ joblib==1.4.2
 SQLAlchemy==2.0.36
 asyncpg==0.30.0
 pgvector==0.3.6
+
+# --- Day 3 backend deps ---
+# bcrypt: password hashing for local auth.
+# PyJWT: signed JWT access tokens.
+# httpx: async HTTP client for weather/webhook calls.
+# tenacity: async retry/backoff for webhook delivery.
+# langgraph: small explicit graph for the three-tool agent flow.
+bcrypt==4.2.1
+PyJWT==2.10.1
+httpx==0.27.2
+tenacity==9.0.0
+langgraph==0.2.60

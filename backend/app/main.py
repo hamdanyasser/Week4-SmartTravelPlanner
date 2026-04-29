@@ -1,34 +1,53 @@
 """FastAPI application entry point.
 
-Kept intentionally small. Its only job is to:
-  - build the FastAPI app
-  - install middleware
-  - register the lifespan handler (where future singletons will live:
-    DB engine, ML model, embedding model, LLM client)
-  - mount routers from `app.api.routes`
-
-Anything more belongs in its own module.
+This file stays intentionally small: create the app, install middleware,
+register singleton resources in lifespan, and mount routers.
 """
 
-from contextlib import asynccontextmanager
+from __future__ import annotations
+
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, trip_briefs
+from app.agent.graph import AtlasBriefAgent
+from app.api.routes import auth, health, trip_briefs
 from app.config import get_settings
+from app.db.init_db import init_db
+from app.db.session import dispose_engine
+from app.ml.service import load_travel_style_model
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Process-level setup and teardown.
+    """Load process-level resources once, with deterministic fallbacks."""
 
-    Day 1: nothing to do here yet. From Day 5 we will create the DB
-    engine, load the joblib ML model, and instantiate the LLM client
-    here — exactly once per process — and expose them via Depends().
-    """
-    yield
+    settings = get_settings()
+    app.state.agent = AtlasBriefAgent()
+    app.state.ml_model = None
+    app.state.startup_warnings = []
+
+    try:
+        app.state.ml_model = load_travel_style_model()
+    except Exception as exc:
+        app.state.startup_warnings.append(
+            f"ML model not loaded; classifier fallback active: {exc.__class__.__name__}"
+        )
+
+    if settings.database_init_on_startup:
+        try:
+            await init_db()
+        except Exception as exc:
+            app.state.startup_warnings.append(
+                f"Database init skipped after failure: {exc.__class__.__name__}"
+            )
+
+    try:
+        yield
+    finally:
+        await dispose_engine()
 
 
 def create_app() -> FastAPI:
@@ -49,6 +68,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health.router)
+    app.include_router(auth.router)
     app.include_router(trip_briefs.router, prefix="/api/v1")
 
     return app

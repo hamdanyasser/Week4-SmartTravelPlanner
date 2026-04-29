@@ -157,36 +157,30 @@ These are non-negotiable; the brief calls them out explicitly.
 
 ---
 
-## 6. Current Day 1 status
+## 6. Current status
 
-- Backend shell exists (`backend/app/main.py`, `app/config.py`,
-  `app/api/routes/health.py`, `app/api/routes/trip_briefs.py`,
-  `app/schemas/trip_brief.py`).
-- Frontend shell exists (Vite + React + TS, `App.tsx` rendering the four
-  Decision Tension Board cards from a stub response).
-- Docker Compose skeleton exists (db + backend + frontend, named `pgdata`
-  volume).
-- `GET /health` exists and returns `{"status":"ok"}`.
-- `POST /api/v1/trip-briefs` exists and returns the hardcoded
-  Madeira/Costa-Rica stub.
-- `TripBriefResponse` schema exists and is the locked contract.
-- Decision Tension Board UI exists (Dream Fit / Reality Pressure / Final
-  Verdict / Counterfactual cards).
-- Day 1 walkthrough exists at `docs/DAY1_CODE_WALKTHROUGH.md`.
-- `backend/.env` is **not** tracked (verified). `backend/.env.example` is
-  the tracked template.
+- Backend app exists with small `main.py`, health route, auth routes, and an
+  agent-backed `POST /api/v1/trip-briefs` route.
+- The `TripBriefResponse` schema remains the locked frontend contract for the
+  Decision Tension Board.
+- Frontend shell exists and was not redesigned for the backend completion work.
+- Docker Compose config validates, but live containers cannot start on this
+  machine while Docker Desktop's `dockerDesktopLinuxEngine` pipe is missing.
+- `backend/.env` is **not** tracked (verified). `backend/.env.example` is the
+  tracked template.
 
-**Day 2 status** — ML classifier shipped:
-- `data/destinations.csv` — 131 hand-labeled rows, 9 features, 6 labels.
-- `backend/app/ml/train_classifier.py` — Pipeline, 3 baselines, k-fold CV,
+**ML classifier shipped:**
+- `data/destinations.csv` - 131 hand-labeled rows, 9 features, 6 labels.
+- `backend/app/ml/train_classifier.py` - Pipeline, 3 baselines, k-fold CV,
   GridSearchCV on RF, per-class report, joblib save.
-- `backend/app/ml/results.csv` — every experiment logged.
-- `backend/app/ml/model.joblib` — current winner: Logistic Regression at
-  mean macro-F1 0.959.
+- `backend/app/ml/results.csv` - every experiment logged.
+- `backend/app/ml/model.joblib` - current winner: Logistic Regression at mean
+  macro-F1 0.959.
+- FastAPI lifespan loads the joblib model once and the ML tool falls back to
+  deterministic rules if loading fails.
 
-**Day 2 status - RAG foundation shipped:**
-- `data/knowledge/` - 28 markdown destination documents across 14
-  destinations.
+**RAG foundation shipped:**
+- `data/knowledge/` - 28 markdown destination documents across 14 destinations.
 - `backend/app/rag/chunking.py` - markdown frontmatter parsing and
   900-character chunks with 150-character overlap.
 - `backend/app/rag/embeddings.py` - deterministic local 384-dimensional
@@ -195,25 +189,36 @@ These are non-negotiable; the brief calls them out explicitly.
   and Postgres/pgvector ingest path.
 - `backend/app/rag/retriever.py` - top-k retrieval with DB-first/local-fallback
   behavior and three manual retrieval probes.
-- `backend/app/schemas/rag.py` - Pydantic schemas for RAG tool input/output.
-- `backend/app/tools/retrieve_destination_knowledge.py` - tool-shaped wrapper
-  for the future allowlisted agent.
-- `backend/app/db/` and `backend/app/models/` - async SQLAlchemy foundation,
-  pgvector init logic, source document model, and chunk embedding model.
-- Live Postgres/pgvector ingest is not yet exercised on this machine because
-  Docker Desktop is not reachable (`dockerDesktopLinuxEngine` pipe missing).
-  `backend/app/rag/smoke_test.py` verifies the deterministic fallback path.
+- `backend/app/tools/retrieve_destination_knowledge.py` - allowlisted tool
+  wrapper around RAG retrieval.
+- Live Postgres/pgvector ingest is still environment-blocked here because
+  Docker Desktop is not reachable. `backend/app/rag/smoke_test.py` verifies the
+  deterministic fallback path.
+
+**Backend agent/auth/persistence/webhook shipped:**
+- Auth: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, bcrypt,
+  JWT, `get_current_user`, and `get_optional_current_user`.
+- Persistence models: `users`, `agent_runs`, `tool_calls`,
+  `webhook_deliveries`, plus existing RAG document/chunk models.
+- Agent: small LangGraph flow in `backend/app/agent/graph.py`.
+- Exactly three tools: `retrieve_destination_knowledge`,
+  `classify_travel_style`, `fetch_live_conditions`.
+- Tool allowlist: `backend/app/agent/registry.py`.
+- Two-model routing fallback: `backend/app/llm/router.py`, with token/cost
+  metadata in `TripBriefResponse.meta`.
+- Webhook: Discord dispatcher with async timeout, retry/backoff, and failure
+  isolation.
+- Smoke verification: `backend/app/smoke_test.py` covers auth hashing/JWT,
+  tool allowlist, agent path, local RAG fallback, ML tool path, and webhook
+  failure isolation.
 
 **What is still missing**:
-- LangGraph agent with the three tools (ML and RAG foundations exist, but the
-  agent loop and allowlist are not wired yet).
-- Two-model routing and token/cost logging.
-- Full DB persistence for users, agent_runs, and tool_calls.
 - Alembic migrations.
-- Auth (register/login/JWT/`current_user`).
-- Webhook delivery.
-- Tests, linter, pre-commit, CI.
-- LangSmith tracing.
+- Formal pytest suite, linter, pre-commit, and CI.
+- Real provider-backed LLM routing and real provider cost accounting.
+- LangSmith tracing screenshot.
+- Frontend auth flow/tool-trace enhancements.
+- Demo video.
 
 The full status table lives in `REQUIREMENTS_CHECKLIST.md`.
 

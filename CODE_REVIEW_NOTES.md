@@ -6,6 +6,102 @@ tradeoffs in human terms.
 
 ---
 
+## Day 3 backend agent/auth/persistence/webhook (2026-04-29)
+
+### What changed
+
+Finished the backend submission path without changing the frontend design or
+the `TripBriefResponse` / Decision Tension Board contract.
+
+- Added auth: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`,
+  bcrypt password hashing, JWT creation/verification, and current-user
+  dependencies.
+- Added persistence models: `users`, `agent_runs`, `tool_calls`, and
+  `webhook_deliveries`, while keeping the existing RAG document/chunk tables.
+- Added the required three tools only:
+  `retrieve_destination_knowledge`, `classify_travel_style`, and
+  `fetch_live_conditions`.
+- Added `backend/app/agent/registry.py` as the explicit allowlist. Unknown
+  tool names are refused and tool failures become structured recoverable
+  errors.
+- Added a small LangGraph agent: extract plan, run the three tools, synthesize
+  the existing Decision Tension Board response.
+- Added deterministic two-model routing placeholders in `backend/app/llm/` so
+  the code records cheap-step and strong-step usage without pretending external
+  LLM keys exist.
+- Loaded the saved `backend/app/ml/model.joblib` once in FastAPI lifespan and
+  used it through the ML tool, with a deterministic rule fallback.
+- Added async live-conditions support with Open-Meteo-style weather lookup when
+  enabled and deterministic fallback when disabled/unavailable.
+- Added Discord webhook delivery with timeout, retry/backoff, and failure
+  isolation. Webhook failure does not break the user response.
+- Replaced the Day 1 trip-brief stub route with the backend agent path plus
+  best-effort persistence and background webhook delivery.
+- Added `backend/app/smoke_test.py` to verify the agent/tool/auth/webhook
+  shape without requiring Docker/Postgres.
+
+### Why these shapes
+
+The project still needs to be demo-safe on a local machine where Docker and
+external provider keys may be missing. That is why the route always prioritizes
+returning a valid brief, while DB writes, live weather, LLM providers, and
+webhooks degrade into explicit fallbacks instead of crashing.
+
+The agent is intentionally simple and beginner-explainable. It does not invent
+tools, stream tokens, or build the full future planner. It only does the
+required backend path for the current submission.
+
+### Verification
+
+Commands run:
+
+```powershell
+cd backend
+.\.venv\Scripts\python -m pip install -r requirements.txt
+.\.venv\Scripts\python -m compileall app
+.\.venv\Scripts\python -m app.smoke_test
+.\.venv\Scripts\python -m app.rag.smoke_test
+```
+
+Smoke output confirmed:
+
+- top pick: Madeira, Portugal,
+- tools: `retrieve_destination_knowledge`, `classify_travel_style`,
+  `fetch_live_conditions`,
+- webhook failure isolated as `failed`.
+
+Route verification with FastAPI `TestClient` confirmed:
+
+- `GET /health` -> 200,
+- `POST /api/v1/trip-briefs` -> 200,
+- response top pick: Madeira,
+- response includes all three tool trace entries.
+- `POST /auth/register` with no reachable DB -> clean 503
+  `Database is unavailable.`, not a traceback.
+
+Docker/pgvector status:
+
+```powershell
+docker compose config --quiet
+docker compose up -d db
+```
+
+Compose config still passes. Live DB startup remains blocked by the local Docker
+Desktop engine pipe being unavailable:
+`open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified`.
+The unproven part is live Postgres/pgvector persistence/ingest on this machine,
+not the Python fallback path.
+
+### What remains
+
+- Alembic migrations.
+- Formal pytest suite, linting, pre-commit, and CI.
+- Real provider-backed LLM routing and real provider cost accounting.
+- LangSmith trace screenshot.
+- Frontend auth flow/tool-trace work and demo video.
+
+---
+
 ## Day 2 RAG verification finalization (2026-04-28)
 
 ### What I tried

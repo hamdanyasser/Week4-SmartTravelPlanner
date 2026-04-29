@@ -14,7 +14,7 @@ from sqlalchemy import text
 from app.db.session import Base, dispose_engine, get_engine
 
 # Import models so SQLAlchemy registers their tables on Base.metadata.
-from app.models import destination_document, document_chunk  # noqa: F401
+from app import models  # noqa: F401
 
 
 async def init_db() -> None:

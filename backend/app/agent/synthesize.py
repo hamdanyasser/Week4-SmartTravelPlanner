@@ -1,0 +1,159 @@
+"""Turn tool results into the existing TripBriefResponse contract."""
+
+from __future__ import annotations
+
+from app.llm.router import final_synthesis_usage
+from app.schemas.llm import TripPlan
+from app.schemas.rag import DestinationKnowledgeResponse
+from app.schemas.tools import (
+    ClassifyTravelStyleOutput,
+    FetchLiveConditionsOutput,
+    ToolExecutionResult,
+)
+from app.schemas.trip_brief import (
+    CounterfactualCard,
+    DestinationCandidate,
+    DreamFitScore,
+    RealityPressureScore,
+    ToolTraceEntry,
+    TravelStyle,
+    TripBriefMeta,
+    TripBriefResponse,
+)
+
+
+def _tool_output(
+    results: list[ToolExecutionResult],
+    tool_name: str,
+) -> dict | None:
+    for result in results:
+        if result.tool_name == tool_name and result.ok:
+            return result.output
+    return None
+
+
+def _trace(results: list[ToolExecutionResult]) -> list[ToolTraceEntry]:
+    entries: list[ToolTraceEntry] = []
+    for result in results:
+        if result.ok:
+            entries.append(
+                ToolTraceEntry(
+                    tool=result.tool_name,
+                    summary="completed",
+                )
+            )
+        else:
+            message = result.error.message if result.error else "unknown error"
+            entries.append(ToolTraceEntry(tool=result.tool_name, summary=message))
+    return entries
+
+
+def synthesize_trip_brief(
+    query: str,
+    plan: TripPlan,
+    tool_results: list[ToolExecutionResult],
+) -> TripBriefResponse:
+    """Create the Decision Tension Board from tool outputs."""
+
+    rag_raw = _tool_output(tool_results, "retrieve_destination_knowledge")
+    ml_raw = _tool_output(tool_results, "classify_travel_style")
+    live_raw = _tool_output(tool_results, "fetch_live_conditions")
+
+    rag = (
+        DestinationKnowledgeResponse.model_validate(rag_raw)
+        if rag_raw
+        else DestinationKnowledgeResponse(
+            query=plan.rag_query,
+            used_fallback=True,
+            message="RAG tool failed; using deterministic narrative fallback.",
+        )
+    )
+    ml = (
+        ClassifyTravelStyleOutput.model_validate(ml_raw)
+        if ml_raw
+        else ClassifyTravelStyleOutput(
+            predicted_style=TravelStyle.ADVENTURE,
+            confidence=0.5,
+            used_fallback=True,
+            warning="ML tool failed; used Adventure fallback.",
+        )
+    )
+    live = (
+        FetchLiveConditionsOutput.model_validate(live_raw)
+        if live_raw
+        else FetchLiveConditionsOutput(
+            destination=plan.destination,
+            weather_signal="Conditions require confirmation before booking.",
+            flight_signal="Flight pressure depends on booking timing.",
+            pressure_score=60,
+            used_fallback=True,
+            warning="Live tool failed; used generic fallback.",
+        )
+    )
+
+    evidence = rag.results[0].content if rag.results else ""
+    dream_score = 86 if plan.destination == "Madeira" else 75
+    if ml.predicted_style != TravelStyle.ADVENTURE:
+        dream_score -= 8
+
+    rationale = (
+        "RAG evidence points to warm island hiking, quieter northern/interior "
+        "routes, and manageable logistics."
+    )
+    if evidence:
+        rationale = evidence[:260].rstrip() + "..."
+
+    final_usage = final_synthesis_usage(
+        f"{query} {rationale} {live.weather_signal} {live.flight_signal}"
+    )
+    total_tokens_in = plan.cheap_usage.tokens_in + final_usage.tokens_in
+    total_tokens_out = plan.cheap_usage.tokens_out + final_usage.tokens_out
+    total_cost = plan.cheap_usage.cost_usd + final_usage.cost_usd
+
+    final_verdict = (
+        f"{plan.destination} is the strongest pick because the dream side is "
+        f"clear: {', '.join(plan.matched_traits)}. The reality side is not "
+        f"ignored: {live.flight_signal.lower()} The tension is manageable, "
+        "so the recommendation is to book early and keep one weather-flex day."
+    )
+    if live.pressure_score < 55:
+        final_verdict = (
+            f"{plan.destination} still fits the dream, but reality pressure is "
+            f"meaningful: {live.weather_signal} {live.flight_signal} Treat this "
+            "as a cautious recommendation, not a carefree one."
+        )
+
+    return TripBriefResponse(
+        query=query,
+        top_pick=DestinationCandidate(
+            name=plan.destination,
+            country=plan.country,
+            travel_style=ml.predicted_style,
+            dream_fit=DreamFitScore(
+                score=max(0, min(100, dream_score)),
+                matched_traits=plan.matched_traits,
+                rationale=rationale,
+            ),
+            reality_pressure=RealityPressureScore(
+                score=live.pressure_score,
+                weather_signal=live.weather_signal,
+                flight_signal=live.flight_signal,
+                rationale=live.warning or "Live and fallback signals were synthesized.",
+            ),
+        ),
+        runners_up=[],
+        final_verdict=final_verdict,
+        counterfactual=CounterfactualCard(
+            obvious_pick=plan.counterfactual_destination,
+            why_not_chosen=plan.counterfactual_reason,
+        ),
+        tools_used=_trace(tool_results),
+        meta=TripBriefMeta(
+            tokens_in=total_tokens_in,
+            tokens_out=total_tokens_out,
+            cost_usd=total_cost,
+            latency_ms=0,
+            cheap_model=plan.cheap_usage.model_name,
+            strong_model=final_usage.model_name,
+        ),
+    )

@@ -11,13 +11,15 @@ The unique product layer is the **Decision Tension Board**:
 
 ## Current phase
 
-The local skeleton is working, the ML classifier foundation is built, and the
-Day 2 RAG foundation is now in place.
+The backend submission path is in place: auth, async SQLAlchemy persistence
+models, the three-tool LangGraph agent, deterministic two-model routing,
+ML classification, RAG retrieval, live-conditions fallback, and Discord webhook
+delivery are implemented.
 
-Still not implemented yet: the full agent, auth, webhooks, user persistence,
-LLM routing, and deployment. The UI intentionally keeps the Decision Tension
-Board concept in place with stub data so later phases have a clear product
-shape to fill.
+The frontend design was not changed. The trip-brief endpoint still returns the
+same `TripBriefResponse` / Decision Tension Board contract, now filled by the
+backend agent with safe local fallbacks when Docker, provider keys, or webhooks
+are unavailable.
 
 ## Repository layout
 
@@ -26,13 +28,18 @@ shape to fill.
 |-- backend/                 FastAPI skeleton
 |   |-- app/config.py        Typed settings, the only env access point
 |   |-- app/main.py          Small app factory and router registration
-|   |-- app/api/routes/      Health and trip-brief routes
+|   |-- app/agent/           Small LangGraph agent, allowlist, synthesis
+|   |-- app/api/routes/      Health, auth, and trip-brief routes
+|   |-- app/auth/            Password hashing and JWT helpers
 |   |-- app/db/              Async SQLAlchemy session/init helpers
-|   |-- app/models/          RAG document + chunk tables
+|   |-- app/llm/             Deterministic two-model routing placeholder
+|   |-- app/models/          Users, runs, tools, webhooks, RAG tables
 |   |-- app/ml/              Travel-style classifier training/artifact
+|   |-- app/persistence/     Best-effort agent/tool persistence helpers
 |   |-- app/rag/             Chunking, embeddings, ingest, retrieval
 |   |-- app/schemas/         Pydantic request/response models
-|   `-- app/tools/           Tool wrappers for the future agent
+|   |-- app/tools/           Exactly three allowlisted agent tools
+|   `-- app/webhooks/        Discord webhook dispatcher
 |-- data/
 |   |-- destinations.csv     Hand-labeled ML dataset
 |   `-- knowledge/           Markdown RAG corpus
@@ -42,9 +49,6 @@ shape to fill.
 |-- REQUIREMENTS_CHECKLIST.md
 `-- CODE_REVIEW_NOTES.md
 ```
-
-Planned folders like `agent/`, `auth/`, `llm/`, and `webhooks/` do not exist
-yet. They should be added only when those phases start.
 
 ## Local setup
 
@@ -62,7 +66,8 @@ docker compose up --build
 
 - Backend: <http://localhost:8000>
 - Backend health: <http://localhost:8000/health>
-- Stub trip brief: `POST http://localhost:8000/api/v1/trip-briefs`
+- Trip brief: `POST http://localhost:8000/api/v1/trip-briefs`
+- Auth: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
 - Frontend: <http://localhost:5173>
 
 `backend/.env` is intentionally ignored by git. Keep real credentials there,
@@ -85,6 +90,73 @@ Frontend:
 cd frontend
 npm install --no-package-lock
 npm run build
+```
+
+## Backend - Auth, Agent, Persistence, Webhook
+
+### Auth endpoints
+
+- `POST /auth/register` creates a user with a bcrypt-hashed password.
+- `POST /auth/login` verifies the password and returns a JWT access token.
+- `GET /auth/me` reads the current user from the `Authorization: Bearer ...`
+  header.
+
+`JWT_SECRET_KEY` must be set in `backend/.env` before issuing real tokens.
+
+### Trip brief endpoint
+
+`POST /api/v1/trip-briefs` runs the backend agent and returns the existing
+Decision Tension Board schema. The endpoint accepts anonymous users for the
+local demo, but it records `user_id` when a valid JWT is present.
+
+The agent uses exactly three allowlisted tools:
+
+1. `retrieve_destination_knowledge`
+2. `classify_travel_style`
+3. `fetch_live_conditions`
+
+Tool failures are converted into structured recoverable errors. A failed tool
+does not crash the user-facing response.
+
+### Two-model routing
+
+`backend/app/llm/router.py` keeps the required routing shape:
+
+- cheap step: extract destination/query features,
+- strong step: final Decision Tension Board synthesis accounting.
+
+No external LLM is called without future provider wiring. When provider keys
+are missing, the backend uses deterministic local routing and records token/cost
+metadata with zero provider cost.
+
+### Persistence
+
+The async SQLAlchemy foundation includes:
+
+- `users`
+- `agent_runs`
+- `tool_calls`
+- `webhook_deliveries`
+- `destination_documents`
+- `document_chunks`
+
+Persistence is best-effort in the trip-brief path: if Postgres is unavailable,
+the endpoint still returns the brief and RAG falls back to the local markdown
+index.
+
+### Webhook
+
+Discord delivery lives in `backend/app/webhooks/dispatcher.py`. It uses async
+HTTP, timeout, retry/backoff, and failure isolation. If `DISCORD_WEBHOOK_URL`
+is empty, delivery is skipped. If a webhook fails, the user response still
+returns successfully.
+
+### Backend smoke checks
+
+```powershell
+cd backend
+.\.venv\Scripts\python -m compileall app
+.\.venv\Scripts\python -m app.smoke_test
 ```
 
 ## ML — travel-style classifier
@@ -173,9 +245,9 @@ between **0.95 and 0.98** — the dataset is small enough that we want to
 flag this as "looks too clean, watch for overfitting once we add
 real-world destinations". This is exactly the honesty the brief asks for.
 
-The trained winner is saved to `backend/app/ml/model.joblib`. From Day 5
-the FastAPI lifespan handler will load it once at startup and expose it
-via a `Depends()` to the `classify_travel_style` agent tool.
+The trained winner is saved to `backend/app/ml/model.joblib`. The FastAPI
+lifespan handler loads it once at startup and passes it to the
+`classify_travel_style` agent tool.
 
 ## RAG - Destination Knowledge Foundation
 

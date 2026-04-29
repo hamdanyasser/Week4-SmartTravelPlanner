@@ -48,6 +48,31 @@ class Settings(BaseSettings):
         default=None,
         description="Future real embedding provider key. Not required on Day 2.",
     )
+    anthropic_api_key: str | None = Field(
+        default=None,
+        description="Future strong-model provider key. Not required for fallback mode.",
+    )
+
+    jwt_secret_key: str | None = Field(
+        default=None,
+        description="Required for issuing JWTs. Set in backend/.env.",
+    )
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_minutes: int = 120
+
+    cheap_model_name: str = "deterministic-extractor"
+    strong_model_name: str = "deterministic-synthesizer"
+
+    weather_live_enabled: bool = False
+    weather_api_base_url: str = "https://api.open-meteo.com/v1/forecast"
+    weather_timeout_seconds: float = 4.0
+
+    discord_webhook_url: str | None = None
+    webhook_timeout_seconds: float = 4.0
+    webhook_max_attempts: int = 3
+    webhook_enabled: bool = True
+
+    database_init_on_startup: bool = False
 
     @property
     def cors_origins_list(self) -> list[str]:
