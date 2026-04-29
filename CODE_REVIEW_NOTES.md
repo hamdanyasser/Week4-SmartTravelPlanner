@@ -6,6 +6,126 @@ tradeoffs in human terms.
 
 ---
 
+## Frontend briefing-room rebuild (2026-04-29)
+
+### What changed
+
+The frontend was rebuilt from a single 86-line `App.tsx` + flat stylesheet
+into a small set of dedicated components that, together, make the page
+feel like an AI travel briefing room rather than a form-and-cards
+dashboard. The backend contract (`TripBriefResponse` and the route at
+`POST /api/v1/trip-briefs`) is **unchanged**.
+
+New files in `frontend/src/`:
+
+- `App.tsx` — orchestrator only; reads top-to-bottom as the user's
+  experience.
+- `hooks/useTripBrief.ts` — owns the request lifecycle: stage timer for
+  the timeline animation, fallback to the offline demo when the backend
+  is unreachable, latency measurement.
+- `utils/parseQuery.ts` — client-side parser for the visible "Trip DNA"
+  panel (budget, month, duration, climate, activities, dislikes). This
+  is a transparency surface, not a planner — the slots feed only the UI.
+- `api/fallback.ts` — offline demo payload, used only when the real API
+  cannot be reached. Marked `meta.cheap_model = "demo"` so it is
+  obvious in the Evidence drawer.
+- `components/Brand.tsx`, `components/Hero.tsx` — top frame with status
+  pill and "wall metrics".
+- `components/CinematicPromptBox.tsx` — glass-panel intake console,
+  serif textarea, four scenario chips, premium CTA, Cmd/Ctrl+Enter
+  shortcut.
+- `components/TripDNAPanel.tsx` — six-cell parsed-intent panel with the
+  predicted travel style.
+- `components/AgentTimeline.tsx` — seven-stage mission timeline that
+  animates while the request is in flight and reflects the real
+  `tools_used` summaries when the response lands.
+- `components/ScoreCard.tsx` — shared shape for Dream Fit and Reality
+  Pressure cards (the variant only swaps accent colors).
+- `components/DecisionTensionBoard.tsx` — the centerpiece: heading,
+  two score cards, the Final Verdict with a tri-color top rule, and
+  the counterfactual.
+- `components/TravelBriefMemo.tsx` — executive trip memo: why it fits,
+  what to expect, risks, booking advice, backup option, budget fit.
+  Re-frames data the backend already returned — does not invent content.
+- `components/EvidenceDrawer.tsx` — collapsible panel with the tool
+  trace on the left and the run accounting (mode, models, tokens,
+  cost, latency, webhook state) on the right.
+- `components/LoadingShimmer.tsx`, `components/EmptyState.tsx`,
+  `components/ErrorState.tsx` — polished states.
+
+`styles.css` is now a small design system with three palette anchors:
+
+- **brass** (`#E0A458`) — primary accent, Dream Fit.
+- **verdigris** (`#4DBDB1`) — secondary accent, Reality Pressure.
+- **terracotta** (`#E27A5C`) — tension / counterfactual.
+
+The text colors are warm parchment (`#F4ECD8`) on deep ink instead of cold
+gray on near-black, which is what most "AI demo" frontends ship with. The
+section feel comes from `Instrument Serif` for editorial type, `Inter` for
+body, and `JetBrains Mono` for technical/eyebrow labels.
+
+`index.html` adds the three Google Fonts and a `theme-color` meta tag.
+
+### Why these shapes
+
+**Small components, single concern.** Each component file is focused and
+short (longest is around 170 lines). The orchestrator (`App.tsx`) is
+about 80 lines and reads as the user journey from top to bottom.
+
+**Design choice — distinctive palette.** The "warm parchment + brass +
+verdigris + terracotta on deep ink" palette intentionally avoids the
+near-default "indigo + cyan on black" look every AI demo ships with.
+The point is for a reviewer to immediately recognize it as a curated
+product surface rather than a generic dashboard.
+
+**Honest fallback.** The offline demo is only used when the network
+request actually fails (`Failed to fetch`-class errors). In all other
+cases — including real backend errors — the user sees the real error
+state, not a fake brief. The demo banner and the Evidence drawer's
+"Mode" row both flag when demo data is being shown.
+
+**Cmd/Ctrl+Enter to submit.** Premium-feel keyboard shortcut on the
+serif textarea. Reduced-motion users get an `@media
+(prefers-reduced-motion)` override that disables the reveal/pulse
+animations.
+
+### Verification
+
+```powershell
+cd frontend
+npm run build
+```
+
+Output:
+
+```
+✓ 47 modules transformed.
+dist/index.html                 1.01 kB │ gzip:  0.55 kB
+dist/assets/index-*.css        24.28 kB │ gzip:  5.07 kB
+dist/assets/index-*.js        167.73 kB │ gzip: 53.93 kB
+✓ built in 878ms
+```
+
+TypeScript build (strict, with `noUnusedLocals` and
+`noUnusedParameters`) passes.
+
+### What was deliberately NOT changed
+
+- The backend response contract (`TripBriefResponse`).
+- The trip-brief route, auth routes, agent flow, tool allowlist.
+- The Decision Tension Board's four canonical pieces.
+- The golden demo query and the Madeira-vs-Costa-Rica narrative.
+
+### What still remains
+
+- Sign-in flow on the frontend (the brief is anonymous-friendly already).
+- LangSmith trace screenshot.
+- Architecture diagram + 3-minute demo video.
+- Real provider-backed LLM routing (with non-zero cost).
+- Alembic migrations, formal pytest, linter, pre-commit, CI.
+
+---
+
 ## Day 3 backend agent/auth/persistence/webhook (2026-04-29)
 
 ### What changed

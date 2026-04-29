@@ -79,12 +79,12 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
-| 7.1 | Vite + React + TypeScript shell | `frontend/` | IN_PROGRESS | Day 1 shell with stub backend call. |
-| 7.2 | Sign-in flow | `frontend/src/pages/SignIn.tsx` | TODO | Wires to `/auth/login`. |
-| 7.3 | Chat-style trip query | `frontend/src/pages/BriefingRoom.tsx` | TODO | Calls `/api/v1/trip-briefs`. |
-| 7.4 | Tool-trace visibility | `frontend/src/components/ToolTrace.tsx` | TODO | Shows which tools fired and what they returned. |
-| 7.5 | Decision Tension Board UI | `frontend/src/components/TensionBoard.tsx` | TODO | Dream Fit vs Reality Pressure, final verdict, counterfactual. |
-| 7.6 | Streaming response | `frontend/src/api/stream.ts` | TODO | Optional but useful for briefing-room feel. |
+| 7.1 | Vite + React + TypeScript shell | `frontend/` | DONE | Briefing-room shell with hero, prompt console, Trip DNA, timeline, tension board, memo, evidence drawer. |
+| 7.2 | Sign-in flow | `frontend/src/pages/SignIn.tsx` | TODO | Wires to `/auth/login`. The trip-brief route already accepts anonymous users for the demo. |
+| 7.3 | Chat-style trip query | `frontend/src/components/CinematicPromptBox.tsx` | DONE | Premium intake console with serif textarea, scenario chips, Cmd/Ctrl+Enter submit. |
+| 7.4 | Tool-trace visibility | `frontend/src/components/AgentTimeline.tsx`, `frontend/src/components/EvidenceDrawer.tsx` | DONE | Mission timeline animates the seven backend stages and shows the real `tools_used` summaries when the response lands; Evidence drawer surfaces tool calls and run accounting. |
+| 7.5 | Decision Tension Board UI | `frontend/src/components/DecisionTensionBoard.tsx` | DONE | Dream Fit (brass) vs Reality Pressure (verdigris) score cards, editorial Final Verdict with tri-color top rule, terracotta counterfactual card. |
+| 7.6 | Streaming response | `frontend/src/api/stream.ts` | TODO | Optional. Current build animates a fake-but-honest progress timeline; real streaming would unlock per-stage updates. |
 
 ## 8. Webhook Delivery
 

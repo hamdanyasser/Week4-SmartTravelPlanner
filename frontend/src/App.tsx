@@ -1,86 +1,89 @@
+// AtlasBrief — single-page briefing room.
+//
+// This file deliberately reads top-to-bottom as the user's experience:
+// hero → prompt → trip DNA → mission timeline → tension board → memo →
+// evidence. Every section is a small dedicated component.
+
 import { useState } from "react";
-import { postTripBrief } from "./api/client";
-import type { TripBriefResponse } from "./api/types";
+import { CinematicPromptBox } from "./components/CinematicPromptBox";
+import { DecisionTensionBoard } from "./components/DecisionTensionBoard";
+import { EmptyState } from "./components/EmptyState";
+import { ErrorState } from "./components/ErrorState";
+import { EvidenceDrawer } from "./components/EvidenceDrawer";
+import { Hero } from "./components/Hero";
+import { LoadingShimmer } from "./components/LoadingShimmer";
+import { TIMELINE_STAGES, AgentTimeline } from "./components/AgentTimeline";
+import { TravelBriefMemo } from "./components/TravelBriefMemo";
+import { TripDNAPanel } from "./components/TripDNAPanel";
+import { useTripBrief } from "./hooks/useTripBrief";
 
 const GOLDEN_DEMO_QUERY =
   "I have two weeks off in July and around $1,500. I want somewhere warm, not too touristy, and I like hiking. Where should I go, when should I book, and what should I expect?";
 
 export default function App() {
   const [query, setQuery] = useState(GOLDEN_DEMO_QUERY);
-  const [brief, setBrief] = useState<TripBriefResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const trip = useTripBrief(TIMELINE_STAGES.length);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await postTripBrief(query);
-      setBrief(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }
+  const showEmpty = !trip.brief && !trip.loading && !trip.error;
+  const showShimmer = trip.loading && !trip.brief;
 
   return (
-    <div className="briefing-room">
-      <header className="briefing-header">
-        <span className="briefing-eyebrow">ATLASBRIEF // BRIEFING ROOM</span>
-        <h1>The AI travel briefing room</h1>
-        <p className="briefing-subtitle">
-          Day 1 skeleton — wired to a stub backend. The Decision Tension Board
-          components light up as the real agent comes online.
-        </p>
-      </header>
+    <div className="app-shell">
+      <Hero mode={trip.mode} />
 
-      <form className="briefing-form" onSubmit={handleSubmit}>
-        <label htmlFor="query">Your trip question</label>
-        <textarea
-          id="query"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          rows={4}
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "Briefing…" : "Generate briefing"}
-        </button>
-      </form>
+      <CinematicPromptBox
+        query={query}
+        onChange={setQuery}
+        onSubmit={() => trip.submit(query)}
+        loading={trip.loading}
+      />
 
-      {error && <div className="briefing-error">{error}</div>}
+      <TripDNAPanel
+        query={query}
+        travelStyle={trip.brief?.top_pick.travel_style ?? null}
+      />
 
-      {brief && (
-        <section className="briefing-output">
-          <h2>{brief.top_pick.name}, {brief.top_pick.country}</h2>
-          <p className="travel-style-tag">{brief.top_pick.travel_style}</p>
+      {trip.error && <ErrorState message={trip.error} />}
 
-          <div className="tension-grid">
-            <div className="tension-card">
-              <h3>Dream Fit</h3>
-              <div className="score">{brief.top_pick.dream_fit.score}</div>
-              <p>{brief.top_pick.dream_fit.rationale}</p>
+      <AgentTimeline
+        activeStage={trip.activeStage}
+        loading={trip.loading}
+        tools={trip.brief?.tools_used}
+        startedAt={trip.startedAt}
+        finishedAt={trip.finishedAt}
+      />
+
+      {showEmpty && <EmptyState />}
+      {showShimmer && <LoadingShimmer />}
+
+      {trip.brief && (
+        <>
+          {trip.mode === "demo" && (
+            <div className="demo-banner reveal">
+              <span className="demo-banner__dot" aria-hidden />
+              Backend unreachable · showing offline demo briefing
             </div>
-
-            <div className="tension-card">
-              <h3>Reality Pressure</h3>
-              <div className="score">{brief.top_pick.reality_pressure.score}</div>
-              <p>{brief.top_pick.reality_pressure.rationale}</p>
-            </div>
-          </div>
-
-          <div className="verdict-card">
-            <h3>Final Verdict</h3>
-            <p>{brief.final_verdict}</p>
-          </div>
-
-          <div className="counterfactual-card">
-            <h3>Why not {brief.counterfactual.obvious_pick}?</h3>
-            <p>{brief.counterfactual.why_not_chosen}</p>
-          </div>
-        </section>
+          )}
+          <DecisionTensionBoard
+            topPick={trip.brief.top_pick}
+            finalVerdict={trip.brief.final_verdict}
+            counterfactual={trip.brief.counterfactual}
+          />
+          <TravelBriefMemo brief={trip.brief} />
+          <EvidenceDrawer
+            tools={trip.brief.tools_used}
+            meta={trip.brief.meta}
+            mode={trip.mode}
+            startedAt={trip.startedAt}
+            finishedAt={trip.finishedAt}
+          />
+        </>
       )}
+
+      <footer className="footer">
+        <span>AtlasBrief · AI travel briefing room</span>
+        <span>Built for SE Factory · Week 4 deliverable</span>
+      </footer>
     </div>
   );
 }

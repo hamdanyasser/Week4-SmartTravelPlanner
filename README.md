@@ -16,10 +16,16 @@ models, the three-tool LangGraph agent, deterministic two-model routing,
 ML classification, RAG retrieval, live-conditions fallback, and Discord webhook
 delivery are implemented.
 
-The frontend design was not changed. The trip-brief endpoint still returns the
-same `TripBriefResponse` / Decision Tension Board contract, now filled by the
-backend agent with safe local fallbacks when Docker, provider keys, or webhooks
-are unavailable.
+The **frontend has been rebuilt** as a single-page briefing room — hero +
+cinematic prompt console + Trip DNA panel + Agent Mission Timeline + the
+**Decision Tension Board** centerpiece + Travel Brief memo + Evidence drawer.
+The backend contract (`TripBriefResponse`) is unchanged; when the backend is
+unreachable the page degrades into a clearly-labeled offline demo briefing.
+
+The visual identity uses a "cartographer's atlas" palette — warm parchment on
+deep ink, with **brass** (#E0A458) for Dream Fit, **verdigris** (#4DBDB1) for
+Reality Pressure, and **terracotta** (#E27A5C) for the counterfactual. The
+walkthrough script is in [`docs/demo_story.md`](docs/demo_story.md).
 
 ## Repository layout
 
@@ -43,8 +49,15 @@ are unavailable.
 |-- data/
 |   |-- destinations.csv     Hand-labeled ML dataset
 |   `-- knowledge/           Markdown RAG corpus
-|-- frontend/                Vite + React + TypeScript skeleton
-|   `-- src/api/             Thin backend client and shared TS types
+|-- frontend/                Vite + React + TypeScript briefing room
+|   |-- src/App.tsx          Orchestrator: hero → prompt → DNA → timeline → board → memo → evidence
+|   |-- src/components/      Hero, CinematicPromptBox, TripDNAPanel, AgentTimeline,
+|   |                        DecisionTensionBoard, ScoreCard, TravelBriefMemo,
+|   |                        EvidenceDrawer, LoadingShimmer, EmptyState, ErrorState, Brand
+|   |-- src/hooks/           useTripBrief — request lifecycle + offline fallback
+|   |-- src/utils/           parseQuery — Trip DNA extraction
+|   |-- src/styles.css       Design tokens (ink / parchment / brass / verdigris / terracotta)
+|   `-- src/api/             Backend client, shared TS types, offline demo payload
 |-- docker-compose.yml       Local Postgres, backend, and frontend services
 |-- REQUIREMENTS_CHECKLIST.md
 `-- CODE_REVIEW_NOTES.md
@@ -158,6 +171,69 @@ cd backend
 .\.venv\Scripts\python -m compileall app
 .\.venv\Scripts\python -m app.smoke_test
 ```
+
+## Frontend — Briefing Room
+
+The single-page briefing room reads top-to-bottom as the user's experience:
+
+1. **Hero** — title, status pill (`Live agent online` / `Offline demo mode`),
+   four "wall metrics".
+2. **Cinematic Prompt Box** — glass intake panel with a serif textarea, four
+   scenario chips, and a premium CTA. Cmd/Ctrl+Enter submits.
+3. **Trip DNA** — six-cell parsed-intent panel (budget, month, duration,
+   climate, activities, constraints) plus the predicted travel style. Slots
+   that can't be parsed are labeled *Not specified* — we don't invent values.
+4. **Agent Mission Timeline** — seven stages mapped to the actual backend
+   pipeline. While the request is in flight the timeline animates; once the
+   response lands, completed stages tick and the real `tools_used` summaries
+   replace the generic stage labels.
+5. **Decision Tension Board** — the centerpiece:
+   - Heading row — destination, country, travel-style chip.
+   - Two score cards — **Dream Fit** (brass, ML + RAG) and **Reality
+     Pressure** (verdigris, live conditions).
+   - **Final Verdict** — large editorial serif type with a tri-color top
+     rule (brass → terracotta → verdigris) that names the tradeoff.
+   - **Why not the obvious pick?** — terracotta counterfactual card.
+6. **Travel Brief Memo** — executive trip memo with sections for *Why it
+   fits / What to expect / Risks / Booking advice / Backup option / Budget
+   fit*.
+7. **Evidence Drawer** — collapsible panel with the tool trace on the left
+   and run accounting (mode, models, tokens, cost, latency, webhook state)
+   on the right.
+
+### Design palette
+
+| Token | Hex | Use |
+|---|---|---|
+| `--ink-900` | `#08090C` | Page background |
+| `--text-100` | `#F4ECD8` | Warm parchment text |
+| `--brass-500` | `#E0A458` | Primary accent (Dream Fit, CTAs) |
+| `--verdigris-500` | `#4DBDB1` | Secondary accent (Reality Pressure) |
+| `--terracotta-500` | `#E27A5C` | Tension / counterfactual |
+| `--moss-500` | `#8FAE6E` | Success |
+| `--rust-500` | `#C25842` | Danger |
+
+This palette is intentionally not the default "indigo + cyan on near-black"
+look every AI demo ships with — it's a curated cartographer's-atlas feel.
+
+### Run the frontend locally
+
+```powershell
+cd frontend
+npm install --no-package-lock
+npm run dev   # http://localhost:5173
+```
+
+The frontend reads the backend URL from `VITE_API_BASE_URL` and falls back
+to `http://localhost:8000`. If the backend is unreachable, the page renders
+a clearly-labeled **offline demo briefing** (the demo banner shows above the
+Tension Board, and the Evidence drawer reflects `Mode: Offline demo`).
+
+### Demo / screenshots
+
+The walkthrough script is in [`docs/demo_story.md`](docs/demo_story.md).
+Screenshots and the 3-minute demo video will be added before submission;
+they live under `docs/`.
 
 ## ML — travel-style classifier
 
