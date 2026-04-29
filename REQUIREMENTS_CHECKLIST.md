@@ -64,7 +64,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 5.3 | `agent_runs` table | `backend/app/models/agent_run.py` | DONE | One row per query: optional user, status, response JSON, token/cost metadata. |
 | 5.4 | `tool_calls` table | `backend/app/models/tool_call.py` | DONE | One row per tool invocation with args, output, status, and structured error text. |
 | 5.5 | `embeddings` table / pgvector chunks | `backend/app/models/document_chunk.py` | IN_PROGRESS | RAG chunks use `Vector(384)` + cosine index; live table creation awaits a reachable Docker/Postgres environment. |
-| 5.6 | Alembic migrations | `backend/alembic/` | TODO | Schema changes are versioned, not improvised. |
+| 5.6 | Alembic migrations | `backend/alembic/` | DONE | `alembic.ini`, `alembic/env.py`, and `versions/0001_initial.py` create all six tables and enable pgvector; `alembic upgrade head --sql` renders valid offline DDL. |
 
 ## 6. Auth - Sign-Up and Login
 
@@ -80,7 +80,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
 | 7.1 | Vite + React + TypeScript shell | `frontend/` | DONE | Briefing-room shell with hero, prompt console, Trip DNA, timeline, tension board, memo, evidence drawer. |
-| 7.2 | Sign-in flow | `frontend/src/pages/SignIn.tsx` | TODO | Wires to `/auth/login`. The trip-brief route already accepts anonymous users for the demo. |
+| 7.2 | Sign-in flow | `frontend/src/components/AuthPanel.tsx`, `frontend/src/hooks/useAuth.ts` | DONE | Collapsible AuthPanel above the prompt console handles `/auth/register` and `/auth/login`; the JWT is persisted in localStorage and sent as a Bearer header on subsequent trip briefs. Anonymous use still works. |
 | 7.3 | Chat-style trip query | `frontend/src/components/CinematicPromptBox.tsx` | DONE | Premium intake console with serif textarea, scenario chips, Cmd/Ctrl+Enter submit. |
 | 7.4 | Tool-trace visibility | `frontend/src/components/AgentTimeline.tsx`, `frontend/src/components/EvidenceDrawer.tsx` | DONE | Mission timeline animates the seven backend stages and shows the real `tools_used` summaries when the response lands; Evidence drawer surfaces tool calls and run accounting. |
 | 7.5 | Decision Tension Board UI | `frontend/src/components/DecisionTensionBoard.tsx` | DONE | Dream Fit (brass) vs Reality Pressure (verdigris) score cards, editorial Final Verdict with tri-color top rule, terracotta counterfactual card. |
@@ -134,7 +134,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
-| 12.1 | Architecture diagram | `README.md`, `docs/architecture.png` | TODO | One diagram showing user to React to FastAPI to tools to DB. |
+| 12.1 | Architecture diagram | `docs/architecture.md`, `README.md` | DONE | ASCII architecture diagram + per-request flow + real-vs-fallback table in `docs/architecture.md`. |
 | 12.2 | Dataset labeling rules | `README.md` | DONE | ML labeling rules documented. |
 | 12.3 | Chunking + retrieval rationale | `README.md` | DONE | RAG section explains chunk size, overlap, embeddings, fallback, and top-k retrieval. |
 | 12.4 | Model comparison table | `README.md` | DONE | Latest ML table documented. |

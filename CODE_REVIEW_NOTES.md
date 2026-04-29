@@ -6,6 +6,114 @@ tradeoffs in human terms.
 
 ---
 
+## Submission finalization (2026-04-29)
+
+### What changed
+
+Closed the remaining gaps the audit surfaced before submission. None of
+these touched the `TripBriefResponse` contract or the Decision Tension
+Board layout.
+
+- **Richer tool-trace summaries.** `backend/app/agent/synthesize.py`
+  now produces per-tool human strings (e.g. *"Predicted Adventure
+  (joblib model, confidence 0.93)"*, *"2 chunks via local fallback;
+  top: Madeira"*, *"Pressure 74/100 (deterministic fallback); …"*)
+  instead of a flat `"completed"`. The Evidence drawer and the
+  mission timeline now read as real telemetry.
+- **Real `latency_ms`.** `backend/app/api/routes/trip_briefs.py`
+  measures `time.perf_counter` around the agent call and writes the
+  result into `response.meta.latency_ms`. The Evidence drawer's
+  *Latency* metric is now real on every live run.
+- **Honest agent failure.** Removed the silent `example_stub_response`
+  fallback that masked agent crashes as fake Madeira briefs. The
+  route now records the failure on `agent_runs.error` (via the new
+  `fail_agent_run` helper) and returns a 500 with a generic detail.
+  Persistence and webhook helpers are still best-effort.
+- **Alembic migrations.** Added `backend/alembic.ini`,
+  `backend/alembic/env.py`, `backend/alembic/script.py.mako`, and
+  `backend/alembic/versions/0001_initial.py`. The initial migration
+  enables `CREATE EXTENSION IF NOT EXISTS vector` and creates all
+  six tables (`users`, `agent_runs`, `tool_calls`,
+  `webhook_deliveries`, `destination_documents`, `document_chunks`)
+  with the cosine ivfflat index. `alembic==1.14.0` is pinned.
+  `alembic upgrade head --sql` renders valid offline DDL on this
+  machine.
+- **Frontend auth flow.** Added `frontend/src/hooks/useAuth.ts` and
+  `frontend/src/components/AuthPanel.tsx`. The collapsible pill above
+  the prompt console toggles between anonymous, register, and login
+  modes. Successful login persists the JWT in `localStorage` and
+  attaches `Authorization: Bearer …` to subsequent trip-brief
+  requests via an updated `postTripBrief(query, authHeader)` and
+  `useTripBrief.submit(query, authHeader)` signature.
+- **Architecture diagram.** Added `docs/architecture.md` with an
+  ASCII layout, a per-request flow, the why-this-shape paragraph,
+  and a real-vs-fallback table.
+- **Code-review survival guide.** Added `docs/CODE_REVIEW_SURVIVAL.md`
+  — a single-page brief covering the 90-second pitch, full request
+  flow, ML/RAG/agent/auth/webhook flows, why-each-decision answers,
+  what still uses fallback, 30 likely reviewer questions, files to
+  know cold, a one-page cheat sheet, and a 15-question quiz.
+- **Checklist statuses.** Marked the four newly-finished rows DONE in
+  `REQUIREMENTS_CHECKLIST.md`: Alembic (5.6), Sign-in flow (7.2),
+  Architecture diagram (12.1).
+
+### Why these shapes
+
+**No new backend endpoints.** Every change either tightened an
+existing path (latency, honest failures, richer trace) or added
+schema-versioning + auth UX that the brief explicitly asks for.
+
+**Auth is collapsible because anonymous demo still matters.** The
+golden demo flow must work without a sign-up. The pill stays out of
+the way until a reviewer wants to see the auth path.
+
+**Alembic migrations were authored by hand instead of autogenerate.**
+Autogenerate against pgvector requires a live DB plus the right
+extension already enabled. A hand-written initial migration is more
+defensible at code review and works the first time the DB is reachable.
+
+**`fail_agent_run` is best-effort like the rest of persistence.** It
+matches the pattern in `create_agent_run` and `finish_agent_run`:
+DB outages never propagate to the user response.
+
+### Verification
+
+```bash
+cd backend
+./.venv/Scripts/python.exe -m compileall -q app
+./.venv/Scripts/python.exe -m app.smoke_test
+./.venv/Scripts/python.exe -m app.rag.smoke_test
+./.venv/Scripts/python.exe -m alembic upgrade head --sql
+
+cd ../frontend
+npm run build
+```
+
+Smoke output confirms:
+
+- top pick Madeira / Portugal,
+- three allowlisted tools all present,
+- new tool-trace summaries visible,
+- webhook failure isolated as `failed`,
+- 28 markdown documents, 14 destinations, 28 chunks via deterministic
+  embeddings.
+
+Alembic offline SQL render passes on this machine. Live `alembic
+upgrade head` against Postgres still requires a running Docker daemon.
+
+### What still depends on environment
+
+- Live Postgres + pgvector (Docker Desktop pipe is unavailable on this
+  machine, so `docker compose up -d db` and live `alembic upgrade head`
+  cannot be exercised here).
+- Real provider-backed LLM calls (deterministic placeholder is wired
+  with the right shape; provider keys plug in behind
+  `app.llm.router`).
+- LangSmith trace screenshot (capture during the Saturday demo).
+- 3-minute demo video (record before submission).
+
+---
+
 ## Frontend briefing-room rebuild (2026-04-29)
 
 ### What changed

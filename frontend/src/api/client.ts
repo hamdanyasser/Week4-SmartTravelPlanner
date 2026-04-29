@@ -6,10 +6,13 @@ import type { TripBriefResponse } from "./types";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
-export async function postTripBrief(query: string): Promise<TripBriefResponse> {
+export async function postTripBrief(
+  query: string,
+  authHeader: Record<string, string> = {},
+): Promise<TripBriefResponse> {
   const res = await fetch(`${API_BASE_URL}/api/v1/trip-briefs`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeader },
     body: JSON.stringify({ query }),
   });
 

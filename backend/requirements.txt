@@ -34,3 +34,7 @@ PyJWT==2.10.1
 httpx==0.27.2
 tenacity==9.0.0
 langgraph==0.2.60
+
+# --- Day 4 deps ---
+# alembic: schema migrations versioned in `backend/alembic/versions/`.
+alembic==1.14.0

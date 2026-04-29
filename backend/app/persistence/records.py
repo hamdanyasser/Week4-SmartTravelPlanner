@@ -38,6 +38,24 @@ async def create_agent_run(
         return None
 
 
+async def fail_agent_run(
+    session: AsyncSession | None,
+    run: AgentRun | None,
+    error: str,
+) -> None:
+    """Mark a run as failed; never raise into the user path."""
+
+    if session is None or run is None:
+        return
+    try:
+        run.status = "failed"
+        run.error = error[:2000]
+        run.completed_at = datetime.now(timezone.utc)
+        await session.commit()
+    except Exception:
+        await _safe_rollback(session)
+
+
 async def finish_agent_run(
     session: AsyncSession | None,
     run: AgentRun | None,

@@ -21,7 +21,7 @@ export interface BriefState {
   startedAt: number | null;
   finishedAt: number | null;
   reset: () => void;
-  submit: (query: string) => Promise<void>;
+  submit: (query: string, authHeader?: Record<string, string>) => Promise<void>;
 }
 
 const STAGE_INTERVAL_MS = 750;
@@ -58,7 +58,7 @@ export function useTripBrief(totalStages: number): BriefState {
   }, []);
 
   const submit = useCallback(
-    async (query: string) => {
+    async (query: string, authHeader: Record<string, string> = {}) => {
       clearTimer();
       setBrief(null);
       setError(null);
@@ -79,7 +79,7 @@ export function useTripBrief(totalStages: number): BriefState {
       }, STAGE_INTERVAL_MS);
 
       try {
-        const result = await postTripBrief(query);
+        const result = await postTripBrief(query, authHeader);
         clearTimer();
         setBrief(result);
         setMode("live");

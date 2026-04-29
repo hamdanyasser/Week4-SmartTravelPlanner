@@ -21,6 +21,21 @@ Open the app at <http://localhost:5173>. Land on the hero:
 
 ---
 
+## 0:25 — Auth pill (anonymous by design)
+
+Above the prompt console, a small pill says **Browsing anonymously**.
+Click *Sign in* to expand the inline register/login form, register a
+new account, and watch the pill flip to **Signed in as <email>**.
+
+Talk track:
+
+> "AtlasBrief works anonymously by design — the demo flow doesn't need
+> a login. But auth is fully wired: bcrypt, JWT, a `current_user`
+> dependency on every protected route, and every signed-in trip brief
+> is associated with the user in `agent_runs.user_id`."
+
+---
+
 ## 0:30 — The intake console
 
 > "The user enters one fuzzy travel question — no checkboxes, no dropdowns."

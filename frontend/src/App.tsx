@@ -1,10 +1,11 @@
 // AtlasBrief — single-page briefing room.
 //
 // This file deliberately reads top-to-bottom as the user's experience:
-// hero → prompt → trip DNA → mission timeline → tension board → memo →
-// evidence. Every section is a small dedicated component.
+// hero → auth pill → prompt → trip DNA → mission timeline → tension board →
+// memo → evidence. Every section is a small dedicated component.
 
 import { useState } from "react";
+import { AuthPanel } from "./components/AuthPanel";
 import { CinematicPromptBox } from "./components/CinematicPromptBox";
 import { DecisionTensionBoard } from "./components/DecisionTensionBoard";
 import { EmptyState } from "./components/EmptyState";
@@ -15,6 +16,7 @@ import { LoadingShimmer } from "./components/LoadingShimmer";
 import { TIMELINE_STAGES, AgentTimeline } from "./components/AgentTimeline";
 import { TravelBriefMemo } from "./components/TravelBriefMemo";
 import { TripDNAPanel } from "./components/TripDNAPanel";
+import { useAuth } from "./hooks/useAuth";
 import { useTripBrief } from "./hooks/useTripBrief";
 
 const GOLDEN_DEMO_QUERY =
@@ -23,6 +25,7 @@ const GOLDEN_DEMO_QUERY =
 export default function App() {
   const [query, setQuery] = useState(GOLDEN_DEMO_QUERY);
   const trip = useTripBrief(TIMELINE_STAGES.length);
+  const auth = useAuth();
 
   const showEmpty = !trip.brief && !trip.loading && !trip.error;
   const showShimmer = trip.loading && !trip.brief;
@@ -31,10 +34,12 @@ export default function App() {
     <div className="app-shell">
       <Hero mode={trip.mode} />
 
+      <AuthPanel auth={auth} />
+
       <CinematicPromptBox
         query={query}
         onChange={setQuery}
-        onSubmit={() => trip.submit(query)}
+        onSubmit={() => trip.submit(query, auth.authHeader())}
         loading={trip.loading}
       />
 

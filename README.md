@@ -11,27 +11,33 @@ The unique product layer is the **Decision Tension Board**:
 
 ## Current phase
 
-The backend submission path is in place: auth, async SQLAlchemy persistence
-models, the three-tool LangGraph agent, deterministic two-model routing,
-ML classification, RAG retrieval, live-conditions fallback, and Discord webhook
-delivery are implemented.
+Submission-ready. The backend path is in place: bcrypt + JWT auth with a
+collapsible frontend sign-in pill, async SQLAlchemy persistence with versioned
+Alembic migrations, the three-tool LangGraph agent, deterministic two-model
+routing, ML classification, pgvector RAG with a deterministic local fallback,
+live-conditions fallback, and Discord webhook delivery with isolated failure.
 
-The **frontend has been rebuilt** as a single-page briefing room — hero +
-cinematic prompt console + Trip DNA panel + Agent Mission Timeline + the
-**Decision Tension Board** centerpiece + Travel Brief memo + Evidence drawer.
-The backend contract (`TripBriefResponse`) is unchanged; when the backend is
-unreachable the page degrades into a clearly-labeled offline demo briefing.
+The **frontend** is a single-page briefing room — hero + auth pill + cinematic
+prompt console + Trip DNA panel + Agent Mission Timeline + the **Decision
+Tension Board** centerpiece + Travel Brief memo + Evidence drawer. When the
+backend is unreachable the page degrades into a clearly-labeled offline demo
+briefing.
 
 The visual identity uses a "cartographer's atlas" palette — warm parchment on
 deep ink, with **brass** (#E0A458) for Dream Fit, **verdigris** (#4DBDB1) for
-Reality Pressure, and **terracotta** (#E27A5C) for the counterfactual. The
-walkthrough script is in [`docs/demo_story.md`](docs/demo_story.md).
+Reality Pressure, and **terracotta** (#E27A5C) for the counterfactual.
+
+- Walkthrough script: [`docs/demo_story.md`](docs/demo_story.md).
+- Architecture diagram + per-request flow: [`docs/architecture.md`](docs/architecture.md).
+- Reviewer survival guide: [`docs/CODE_REVIEW_SURVIVAL.md`](docs/CODE_REVIEW_SURVIVAL.md).
 
 ## Repository layout
 
 ```text
 .
 |-- backend/                 FastAPI skeleton
+|   |-- alembic/             Versioned schema migrations (0001_initial)
+|   |-- alembic.ini          Alembic config (reads DATABASE_URL via Settings)
 |   |-- app/config.py        Typed settings, the only env access point
 |   |-- app/main.py          Small app factory and router registration
 |   |-- app/agent/           Small LangGraph agent, allowlist, synthesis
@@ -50,11 +56,12 @@ walkthrough script is in [`docs/demo_story.md`](docs/demo_story.md).
 |   |-- destinations.csv     Hand-labeled ML dataset
 |   `-- knowledge/           Markdown RAG corpus
 |-- frontend/                Vite + React + TypeScript briefing room
-|   |-- src/App.tsx          Orchestrator: hero → prompt → DNA → timeline → board → memo → evidence
-|   |-- src/components/      Hero, CinematicPromptBox, TripDNAPanel, AgentTimeline,
+|   |-- src/App.tsx          Orchestrator: hero → auth pill → prompt → DNA → timeline → board → memo → evidence
+|   |-- src/components/      Hero, AuthPanel, CinematicPromptBox, TripDNAPanel, AgentTimeline,
 |   |                        DecisionTensionBoard, ScoreCard, TravelBriefMemo,
 |   |                        EvidenceDrawer, LoadingShimmer, EmptyState, ErrorState, Brand
-|   |-- src/hooks/           useTripBrief — request lifecycle + offline fallback
+|   |-- src/hooks/           useTripBrief — request lifecycle + offline fallback;
+|   |                        useAuth — JWT persistence + Bearer header
 |   |-- src/utils/           parseQuery — Trip DNA extraction
 |   |-- src/styles.css       Design tokens (ink / parchment / brass / verdigris / terracotta)
 |   `-- src/api/             Backend client, shared TS types, offline demo payload
@@ -157,6 +164,17 @@ Persistence is best-effort in the trip-brief path: if Postgres is unavailable,
 the endpoint still returns the brief and RAG falls back to the local markdown
 index.
 
+### Migrations
+
+Versioned schema migrations live in [`backend/alembic/`](backend/alembic/).
+The initial migration enables `pgvector` and creates all six tables.
+
+```powershell
+cd backend
+.\.venv\Scripts\python -m alembic upgrade head            # against a live DB
+.\.venv\Scripts\python -m alembic upgrade head --sql      # render DDL offline
+```
+
 ### Webhook
 
 Discord delivery lives in `backend/app/webhooks/dispatcher.py`. It uses async
@@ -178,26 +196,30 @@ The single-page briefing room reads top-to-bottom as the user's experience:
 
 1. **Hero** — title, status pill (`Live agent online` / `Offline demo mode`),
    four "wall metrics".
-2. **Cinematic Prompt Box** — glass intake panel with a serif textarea, four
+2. **Auth pill / form** — anonymous by default; one click expands a
+   register/login form that calls `/auth/register` or `/auth/login`. The
+   resulting JWT is persisted in `localStorage` and attached to subsequent
+   trip briefs as `Authorization: Bearer …`.
+3. **Cinematic Prompt Box** — glass intake panel with a serif textarea, four
    scenario chips, and a premium CTA. Cmd/Ctrl+Enter submits.
-3. **Trip DNA** — six-cell parsed-intent panel (budget, month, duration,
+4. **Trip DNA** — six-cell parsed-intent panel (budget, month, duration,
    climate, activities, constraints) plus the predicted travel style. Slots
    that can't be parsed are labeled *Not specified* — we don't invent values.
-4. **Agent Mission Timeline** — seven stages mapped to the actual backend
+5. **Agent Mission Timeline** — seven stages mapped to the actual backend
    pipeline. While the request is in flight the timeline animates; once the
    response lands, completed stages tick and the real `tools_used` summaries
    replace the generic stage labels.
-5. **Decision Tension Board** — the centerpiece:
+6. **Decision Tension Board** — the centerpiece:
    - Heading row — destination, country, travel-style chip.
    - Two score cards — **Dream Fit** (brass, ML + RAG) and **Reality
      Pressure** (verdigris, live conditions).
    - **Final Verdict** — large editorial serif type with a tri-color top
      rule (brass → terracotta → verdigris) that names the tradeoff.
    - **Why not the obvious pick?** — terracotta counterfactual card.
-6. **Travel Brief Memo** — executive trip memo with sections for *Why it
+7. **Travel Brief Memo** — executive trip memo with sections for *Why it
    fits / What to expect / Risks / Booking advice / Backup option / Budget
    fit*.
-7. **Evidence Drawer** — collapsible panel with the tool trace on the left
+8. **Evidence Drawer** — collapsible panel with the tool trace on the left
    and run accounting (mode, models, tokens, cost, latency, webhook state)
    on the right.
 

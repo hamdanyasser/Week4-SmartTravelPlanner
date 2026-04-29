@@ -32,20 +32,50 @@ def _tool_output(
     return None
 
 
-def _trace(results: list[ToolExecutionResult]) -> list[ToolTraceEntry]:
-    entries: list[ToolTraceEntry] = []
-    for result in results:
-        if result.ok:
-            entries.append(
-                ToolTraceEntry(
-                    tool=result.tool_name,
-                    summary="completed",
-                )
+def _summarize_tool(result: ToolExecutionResult) -> str:
+    """Produce a per-tool human summary the timeline and Evidence drawer can show."""
+
+    if not result.ok:
+        return result.error.message if result.error else "unknown error"
+
+    output = result.output or {}
+
+    if result.tool_name == "retrieve_destination_knowledge":
+        rag_results = output.get("results") or []
+        used_fallback = output.get("used_fallback", False)
+        if rag_results:
+            top = rag_results[0]
+            destinations = sorted({row.get("destination", "?") for row in rag_results})
+            label = ", ".join(destinations[:3])
+            mode = "local fallback" if used_fallback else "pgvector"
+            return (
+                f"{len(rag_results)} chunks via {mode}; top: {top.get('destination', '?')} "
+                f"({top.get('source_title', 'source')}); covered: {label}"
             )
-        else:
-            message = result.error.message if result.error else "unknown error"
-            entries.append(ToolTraceEntry(tool=result.tool_name, summary=message))
-    return entries
+        return "No RAG chunks matched; using deterministic narrative fallback."
+
+    if result.tool_name == "classify_travel_style":
+        style = output.get("predicted_style", "?")
+        confidence = output.get("confidence", 0.0)
+        used_fallback = output.get("used_fallback", False)
+        mode = "rule fallback" if used_fallback else "joblib model"
+        return f"Predicted {style} ({mode}, confidence {float(confidence):.2f})"
+
+    if result.tool_name == "fetch_live_conditions":
+        pressure = output.get("pressure_score", 0)
+        weather = output.get("weather_signal", "")
+        used_fallback = output.get("used_fallback", False)
+        mode = "deterministic fallback" if used_fallback else "live weather"
+        return f"Pressure {int(pressure)}/100 ({mode}); {weather}"
+
+    return "completed"
+
+
+def _trace(results: list[ToolExecutionResult]) -> list[ToolTraceEntry]:
+    return [
+        ToolTraceEntry(tool=result.tool_name, summary=_summarize_tool(result))
+        for result in results
+    ]
 
 
 def synthesize_trip_brief(
