@@ -11,10 +11,12 @@ from app.api.deps import get_current_user, get_user_by_email
 from app.auth.hashing import hash_password, verify_password
 from app.auth.jwt import create_access_token
 from app.db.session import get_session
+from app.logging_config import get_logger
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+log = get_logger(__name__)
 
 
 def _read_user(user: User) -> UserRead:
@@ -58,10 +60,15 @@ async def register(
         raise
     except Exception as exc:
         await _safe_rollback(session)
+        log.warning(
+            "auth.register_failed",
+            extra={"exc_class": exc.__class__.__name__},
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database is unavailable.",
         ) from exc
+    log.info("auth.registered", extra={"user_id": user.id})
     return _read_user(user)
 
 
@@ -82,10 +89,15 @@ async def login(
         ) from exc
 
     if user is None or not verify_password(payload.password, user.password_hash):
+        log.info(
+            "auth.login_failed",
+            extra={"reason": "invalid_credentials"},
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
         )
+    log.info("auth.login_ok", extra={"user_id": user.id})
     return TokenResponse(access_token=create_access_token(user.id))
 
 

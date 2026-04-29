@@ -10,8 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
+from app.logging_config import get_logger
 from app.models.webhook_delivery import WebhookDelivery
 from app.schemas.trip_brief import TripBriefResponse
+
+log = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -65,6 +68,7 @@ async def deliver_discord_webhook(
     if not settings.webhook_enabled or not settings.discord_webhook_url:
         result = WebhookResult(status="skipped", attempts=0, error="No Discord webhook configured.")
         await _store_delivery(session, agent_run_id, result)
+        log.info("webhook.skipped", extra={"agent_run_id": agent_run_id, "reason": "not_configured"})
         return result
 
     attempts = 0
@@ -91,6 +95,14 @@ async def deliver_discord_webhook(
                         response_status_code=response.status_code,
                     )
                     await _store_delivery(session, agent_run_id, result)
+                    log.info(
+                        "webhook.delivered",
+                        extra={
+                            "agent_run_id": agent_run_id,
+                            "attempts": attempts,
+                            "status_code": response.status_code,
+                        },
+                    )
                     return result
     except Exception as exc:
         result = WebhookResult(
@@ -99,6 +111,14 @@ async def deliver_discord_webhook(
             error=f"{exc.__class__.__name__}: {exc}",
         )
         await _store_delivery(session, agent_run_id, result)
+        log.warning(
+            "webhook.failed",
+            extra={
+                "agent_run_id": agent_run_id,
+                "attempts": attempts,
+                "exc_class": exc.__class__.__name__,
+            },
+        )
         return result
 
     result = WebhookResult(status="failed", attempts=attempts, error="Unknown webhook failure.")

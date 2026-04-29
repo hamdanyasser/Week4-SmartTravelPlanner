@@ -52,7 +52,7 @@ def classify_with_model(
         classes = [str(label) for label in model.classes_]
         probabilities = {
             TravelStyle(label): float(value)
-            for label, value in zip(classes, proba)
+            for label, value in zip(classes, proba, strict=False)
             if label in TravelStyle._value2member_map_
         }
         confidence = max(probabilities.values()) if probabilities else 1.0

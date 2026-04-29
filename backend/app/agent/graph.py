@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from typing import Any, TypedDict
 
 from langgraph.graph import END, StateGraph
@@ -110,3 +111,68 @@ class AtlasBriefAgent:
             {"query": query, "session": session, "ml_model": ml_model}
         )
         return result
+
+    async def stream_events(
+        self,
+        query: str,
+        session: AsyncSession | None = None,
+        ml_model: Any | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Yield per-stage events the SSE route can ship to the browser.
+
+        We deliberately do NOT use LangGraph's stream API: the steps in our
+        graph are coarse (plan / three tools / synthesize) and we want one
+        event *per tool*, not one per LangGraph node. So this generator runs
+        the same handlers directly and emits events at the resolution the UI
+        actually cares about.
+        """
+
+        plan = extract_trip_plan(query)
+        yield {
+            "type": "stage",
+            "stage": "plan",
+            "status": "completed",
+            "destination": plan.destination,
+        }
+
+        tool_payloads = [
+            (
+                "retrieve_destination_knowledge",
+                {"query": plan.rag_query, "destinations": [plan.destination], "top_k": 3},
+            ),
+            (
+                "classify_travel_style",
+                {
+                    "query": query,
+                    "destination": plan.destination,
+                    **plan.feature_profile,
+                },
+            ),
+            (
+                "fetch_live_conditions",
+                {
+                    "query": query,
+                    "destination": plan.destination,
+                    "country": plan.country,
+                    "trip_month": "July",
+                },
+            ),
+        ]
+
+        results: list[ToolExecutionResult] = []
+        for name, payload in tool_payloads:
+            yield {"type": "stage", "stage": f"tool:{name}", "status": "started"}
+            result = await execute_tool(name, payload, session=session, ml_model=ml_model)
+            results.append(result)
+            yield {
+                "type": "stage",
+                "stage": f"tool:{name}",
+                "status": "completed" if result.ok else "error",
+                "ok": result.ok,
+            }
+
+        yield {"type": "stage", "stage": "synthesize", "status": "started"}
+        response = synthesize_trip_brief(query=query, plan=plan, tool_results=results)
+        yield {"type": "stage", "stage": "synthesize", "status": "completed"}
+        yield {"type": "brief", "response": response.model_dump(mode="json")}
+        yield {"type": "done"}

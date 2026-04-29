@@ -17,7 +17,10 @@ from app.api.routes import auth, health, trip_briefs
 from app.config import get_settings
 from app.db.init_db import init_db
 from app.db.session import dispose_engine
+from app.logging_config import configure_logging, get_logger
 from app.ml.service import load_travel_style_model
+
+log = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -25,29 +28,43 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Load process-level resources once, with deterministic fallbacks."""
 
     settings = get_settings()
+    configure_logging(level="DEBUG" if settings.app_debug else "INFO")
+    log.info("app.startup", extra={"env": settings.app_env, "debug": settings.app_debug})
+
     app.state.agent = AtlasBriefAgent()
     app.state.ml_model = None
     app.state.startup_warnings = []
 
     try:
         app.state.ml_model = load_travel_style_model()
+        log.info("ml_model.loaded")
     except Exception as exc:
         app.state.startup_warnings.append(
             f"ML model not loaded; classifier fallback active: {exc.__class__.__name__}"
+        )
+        log.warning(
+            "ml_model.load_failed",
+            extra={"exc_class": exc.__class__.__name__, "exc": str(exc)},
         )
 
     if settings.database_init_on_startup:
         try:
             await init_db()
+            log.info("db.init_ok")
         except Exception as exc:
             app.state.startup_warnings.append(
                 f"Database init skipped after failure: {exc.__class__.__name__}"
+            )
+            log.warning(
+                "db.init_skipped",
+                extra={"exc_class": exc.__class__.__name__, "exc": str(exc)},
             )
 
     try:
         yield
     finally:
         await dispose_engine()
+        log.info("app.shutdown")
 
 
 def create_app() -> FastAPI:

@@ -84,7 +84,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 7.3 | Chat-style trip query | `frontend/src/components/CinematicPromptBox.tsx` | DONE | Premium intake console with serif textarea, scenario chips, Cmd/Ctrl+Enter submit. |
 | 7.4 | Tool-trace visibility | `frontend/src/components/AgentTimeline.tsx`, `frontend/src/components/EvidenceDrawer.tsx` | DONE | Mission timeline animates the seven backend stages and shows the real `tools_used` summaries when the response lands; Evidence drawer surfaces tool calls and run accounting. |
 | 7.5 | Decision Tension Board UI | `frontend/src/components/DecisionTensionBoard.tsx` | DONE | Dream Fit (brass) vs Reality Pressure (verdigris) score cards, editorial Final Verdict with tri-color top rule, terracotta counterfactual card. |
-| 7.6 | Streaming response | `frontend/src/api/stream.ts` | TODO | Optional. Current build animates a fake-but-honest progress timeline; real streaming would unlock per-stage updates. |
+| 7.6 | Streaming response | `frontend/src/api/stream.ts`, `backend/app/api/routes/trip_briefs.py` (`/trip-briefs/stream`), `backend/app/agent/graph.py` (`stream_events`) | DONE | Optional. SSE endpoint emits one event per stage; frontend consumer drives the cinematic timeline from real events when `?stream=1` or `VITE_USE_STREAMING=true`. Default still uses the JSON path with the fake-but-honest timer. |
 
 ## 8. Webhook Delivery
 
@@ -111,24 +111,24 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 10.1 | Async all the way down | Routes/tools/db/webhook calls | DONE | Trip brief, auth, tools, DB, and webhook paths use async interfaces where they cross app boundaries. |
 | 10.2 | FastAPI `Depends` for DI | `backend/app/db/session.py`, `backend/app/api/deps.py` | DONE | DB session and current-user dependencies are wired through FastAPI. |
 | 10.3 | Lifespan singletons | `backend/app/main.py` | DONE | Lifespan creates the agent and loads the joblib model once per process. |
-| 10.4 | `lru_cache` + TTL caches | `backend/app/cache/` | TODO | TTL caches land with live-condition APIs. |
+| 10.4 | `lru_cache` + TTL caches | `backend/app/cache/ttl.py`, `backend/app/tools/fetch_live_conditions.py` | DONE | Async `TTLCache` (default 600 s) wraps `fetch_live_conditions` keyed by destination+country+month, with single-flight stampede protection. `lru_cache` is on settings, joblib model, embedding provider, and the local RAG chunk index. |
 | 10.5 | `pydantic-settings` Settings class | `backend/app/config.py` | DONE | Settings includes app, DB, RAG, auth, routing, live conditions, and webhook config. |
-| 10.6 | Type hints everywhere | All `.py` files | IN_PROGRESS | New RAG/DB modules are typed. |
+| 10.6 | Type hints everywhere | All `.py` files | DONE | Ruff's `ANN001/201/202/204` rules are enabled in `pyproject.toml` and pass clean across `backend/app`. |
 | 10.7 | Pydantic at the boundary | `backend/app/schemas/` | DONE | Trip brief, auth, RAG, LLM usage, and tool schemas validate API/tool boundaries. |
 | 10.8 | Errors + retries + failure isolation | tools + webhook + LLM calls | DONE | Tool errors are structured and webhook failures never break the trip-brief response. |
 | 10.9 | Modular layout - no giant `main.py` | repo structure | DONE | Agent, auth, DB, LLM, ML, RAG, schemas, tools, persistence, and webhooks are split by concern. |
-| 10.10 | Structured JSON logs | `backend/app/logging_config.py` | TODO | Not added yet. |
-| 10.11 | Linters + pre-commit | `pyproject.toml`, `.pre-commit-config.yaml` | TODO | Set up before broad feature work. |
+| 10.10 | Structured JSON logs | `backend/app/logging_config.py` | DONE | stdlib `JsonFormatter` + `_MergingAdapter` so per-call `extra={...}` merges into one JSON line on stdout. Wired into the lifespan, trip-brief route, auth route, agent registry (per-tool latency), and webhook dispatcher. |
+| 10.11 | Linters + pre-commit | `pyproject.toml`, `.pre-commit-config.yaml`, `backend/requirements-dev.txt` | DONE | Ruff (`E,F,I,B,UP,SIM,PL,RUF,ANN`), Black, and pre-commit hooks for whitespace/EOF/YAML/TOML. Dev deps separated from prod. |
 | 10.12 | `.env.example` listing every key | `backend/.env.example` | DONE | Template lists app, DB, RAG, auth, routing, weather, and webhook settings. |
 
 ## 11. Tests
 
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
-| 11.1 | Per-tool tests with fake LLM | `backend/app/smoke_test.py` | IN_PROGRESS | Smoke script verifies all three allowlisted tools through the agent without external services. |
-| 11.2 | Pydantic schema valid/invalid tests | `backend/app/smoke_test.py` | IN_PROGRESS | Smoke script exercises current schemas; formal pytest coverage is still future work. |
-| 11.3 | End-to-end agent test | `backend/app/smoke_test.py` | IN_PROGRESS | Golden demo path runs through the LangGraph agent with deterministic fallbacks. |
-| 11.4 | GitHub Actions CI | `.github/workflows/ci.yml` | TODO | Tests run on every push. |
+| 11.1 | Per-tool tests with fake LLM | `tests/test_tool_classify.py`, `tests/test_tool_live_conditions.py`, `tests/test_tool_retrieve_knowledge.py` | DONE | Each allowlisted tool is exercised in isolation; `classify_travel_style` accepts a stub model and a dict payload; `fetch_live_conditions` covers schema rejection, fallback, unknown destination, and cache hit/miss; the RAG tool runs against the deterministic local index. |
+| 11.2 | Pydantic schema valid/invalid tests | `tests/test_schemas.py`, `tests/test_compare.py` | DONE | Every schema at the API boundary has a valid + at least one invalid case (length bounds, range bounds, missing required fields, two-distinct-destinations rule for compare mode). |
+| 11.3 | End-to-end agent test | `tests/test_agent_e2e.py`, `tests/test_streaming.py`, `tests/test_agent_registry.py` | DONE | Full LangGraph run asserts top-pick + tool-name allowlist + token accounting + tool-trace shape. Streaming generator asserts the per-stage event lifecycle. Allowlist refusal and structured-error paths are covered. |
+| 11.4 | GitHub Actions CI | `.github/workflows/ci.yml` | DONE | Two jobs (backend ruff + pytest, frontend `tsc + vite build`) on every push and PR to `main`. |
 
 ## 12. README Deliverables
 
@@ -142,9 +142,24 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 12.6 | LangSmith trace screenshot | `README.md`, `docs/trace.png` | TODO | Multi-tool trace. |
 | 12.7 | 3-minute demo video | `docs/demo.mp4` or link | TODO | One end-to-end run from UI to webhook. |
 
-## 13. Code Review Discipline
+## 13. Optional Extensions
+
+| Extension | Where it lives | Status | Code review note |
+|---|---|---|---|
+| Streaming response (SSE) | `backend/app/api/routes/trip_briefs.py`, `backend/app/agent/graph.py`, `frontend/src/api/stream.ts` | DONE | Per-stage SSE events; opt-in on the frontend via `?stream=1`. |
+| Compare two destinations | `backend/app/agent/compare.py`, `backend/app/schemas/compare.py`, `POST /api/v1/trip-briefs/compare` | DONE | Six tool calls per request, named dream/reality winners, tradeoff verdict. |
+| Human-in-the-loop approval | `backend/app/api/routes/trip_briefs.py` (`/agent-runs/{id}/approve`), `backend/app/config.py` (`WEBHOOK_REQUIRE_APPROVAL`) | DONE | Auth-required, user-scoped; brief is reconstructed from `agent_runs.response_json` so the channel message matches what the user saw. |
+| MLflow experiment tracking | `backend/app/ml/mlflow_tracking.py`, `backend/app/ml/train_classifier.py` | DONE | No-op unless `MLFLOW_TRACKING_URI` is set; `results.csv` stays the source of truth. |
+| Planner-vs-ReAct reflection | `docs/PLANNER_VS_REACT.md` | DONE | Defended write-up of why the agent uses planner-then-executor and when ReAct would actually win. |
+| Deploy (Railway/Vercel/Supabase) | — | NOT_STARTED | Requires real cloud accounts; out of scope for code-only session. |
+| SEQ / Loki structured logging sink | `backend/app/logging_config.py` | PARTIAL | JSON-on-stdout is in place; collectors can be pointed at the container log stream without code changes. |
+| Secrets management (Vault/Doppler) | — | NOT_STARTED | `pydantic-settings` already structures config; switching to a vault is a deployment-time concern. |
+
+---
+
+## 14. Code Review Discipline
 
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
-| 13.1 | `CODE_REVIEW_NOTES.md` updated each major change | `CODE_REVIEW_NOTES.md` | DONE | Plain-language log is updated for backend agent/auth/persistence/webhook work. |
-| 13.2 | No giant files; clear naming | repo-wide | DONE | Backend pieces are split into small modules by concern. |
+| 14.1 | `CODE_REVIEW_NOTES.md` updated each major change | `CODE_REVIEW_NOTES.md` | DONE | Plain-language log is updated for backend agent/auth/persistence/webhook work, and again for the engineering-hardening + optional-extensions pass. |
+| 14.2 | No giant files; clear naming | repo-wide | DONE | Backend pieces are split into small modules by concern. |

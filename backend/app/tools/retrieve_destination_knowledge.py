@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.rag.retriever import retrieve_destination_knowledge as retrieve_rag
 from app.schemas.rag import DestinationKnowledgeQuery, DestinationKnowledgeResponse
 
-
 TOOL_NAME = "retrieve_destination_knowledge"
 
 

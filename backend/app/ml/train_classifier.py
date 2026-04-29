@@ -46,6 +46,19 @@ from sklearn.model_selection import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from app.ml.mlflow_tracking import (
+    log_artifact as mlflow_log_artifact,
+)
+from app.ml.mlflow_tracking import (
+    log_metrics as mlflow_log_metrics,
+)
+from app.ml.mlflow_tracking import (
+    log_params as mlflow_log_params,
+)
+from app.ml.mlflow_tracking import (
+    mlflow_run,
+)
+
 # --- Paths ---------------------------------------------------------------
 # We resolve paths from this file so the script works whether you run it
 # from the repo root, from `backend/`, or from anywhere else.
@@ -76,7 +89,7 @@ LABELS = ["Adventure", "Relaxation", "Culture", "Budget", "Luxury", "Family"]
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.Series]:
     """Read the CSV and split into X (features) and y (label)."""
     df = pd.read_csv(DATA_PATH)
-    missing = set(FEATURES + [TARGET]) - set(df.columns)
+    missing = set([*FEATURES, TARGET]) - set(df.columns)
     if missing:
         raise ValueError(f"Dataset is missing columns: {sorted(missing)}")
     unknown = sorted(set(df[TARGET].unique()) - set(LABELS))
@@ -326,6 +339,31 @@ def main() -> None:
 
     append_results(summary, search.best_params_, search.best_score_, winner_name)
     print(f"Results appended to {RESULTS_PATH}")
+
+    # Optional MLflow logging (no-op unless MLFLOW_TRACKING_URI is set).
+    with mlflow_run() as run:
+        if run is not None:
+            mlflow_log_params(
+                {
+                    "winner": winner_name,
+                    "rows": len(df),
+                    "features": len(FEATURES),
+                    "random_state": RANDOM_STATE,
+                    "best_rf_params": json.dumps(search.best_params_, sort_keys=True),
+                }
+            )
+            metrics: dict[str, float] = {
+                "winner_f1_macro": float(winner_score),
+                "rf_grid_best_f1_macro": float(search.best_score_),
+            }
+            for row in summary:
+                model = row["model"]
+                metrics[f"{model}_acc_mean"] = float(row["accuracy_mean"])
+                metrics[f"{model}_f1_mean"] = float(row["f1_macro_mean"])
+            mlflow_log_metrics(metrics)
+            mlflow_log_artifact(MODEL_PATH)
+            mlflow_log_artifact(RESULTS_PATH)
+            print("MLflow run logged.")
 
 
 if __name__ == "__main__":

@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any
 
 import httpx
 
+from app.cache import TTLCache
 from app.config import get_settings
+from app.logging_config import get_logger
 from app.schemas.tools import FetchLiveConditionsInput, FetchLiveConditionsOutput
 
 TOOL_NAME = "fetch_live_conditions"
+log = get_logger(__name__)
 
 DESTINATION_COORDS = {
     "madeira": (32.7607, -16.9595),
@@ -18,6 +22,23 @@ DESTINATION_COORDS = {
     "azores": (37.7412, -25.6756),
     "canary islands": (28.2916, -16.6291),
 }
+
+
+@lru_cache(maxsize=1)
+def _live_conditions_cache() -> TTLCache[FetchLiveConditionsOutput]:
+    """One TTL cache per process, sized by the configured weather TTL."""
+
+    settings = get_settings()
+    return TTLCache[FetchLiveConditionsOutput](
+        ttl_seconds=settings.weather_cache_ttl_seconds,
+        max_entries=128,
+    )
+
+
+def reset_live_conditions_cache() -> None:
+    """Drop the cached live-conditions TTL store (used by tests)."""
+
+    _live_conditions_cache.cache_clear()
 
 
 def fallback_live_conditions(payload: FetchLiveConditionsInput) -> FetchLiveConditionsOutput:
@@ -52,16 +73,11 @@ def fallback_live_conditions(payload: FetchLiveConditionsInput) -> FetchLiveCond
     )
 
 
-async def fetch_live_conditions(
-    payload: FetchLiveConditionsInput | dict[str, Any],
+async def _fetch_uncached(
+    request: FetchLiveConditionsInput,
 ) -> FetchLiveConditionsOutput:
-    """Return current weather pressure with deterministic fallback."""
+    """Single network round-trip; isolated so it can sit behind a TTL cache."""
 
-    request = (
-        payload
-        if isinstance(payload, FetchLiveConditionsInput)
-        else FetchLiveConditionsInput.model_validate(payload)
-    )
     settings = get_settings()
     if not settings.weather_live_enabled:
         return fallback_live_conditions(request)
@@ -83,7 +99,11 @@ async def fetch_live_conditions(
             )
             response.raise_for_status()
             data = response.json()
-    except Exception:
+    except Exception as exc:
+        log.warning(
+            "live_conditions.api_failed",
+            extra={"destination": request.destination, "exc_class": exc.__class__.__name__},
+        )
         return fallback_live_conditions(request)
 
     current = data.get("current", {})
@@ -104,3 +124,43 @@ async def fetch_live_conditions(
         used_fallback=False,
         warning="Weather is live; flights remain heuristic until the flight API phase.",
     )
+
+
+async def fetch_live_conditions(
+    payload: FetchLiveConditionsInput | dict[str, Any],
+) -> FetchLiveConditionsOutput:
+    """Return current weather pressure with TTL caching + deterministic fallback.
+
+    Why cache: weather for the same city within ten minutes is the same answer.
+    The brief explicitly says "don't pay the API twice." We key on the
+    destination/country/trip_month tuple so unrelated queries don't collide.
+    """
+
+    request = (
+        payload
+        if isinstance(payload, FetchLiveConditionsInput)
+        else FetchLiveConditionsInput.model_validate(payload)
+    )
+
+    cache = _live_conditions_cache()
+    cache_key = (
+        "live_conditions",
+        request.destination.lower(),
+        (request.country or "").lower(),
+        (request.trip_month or "").lower(),
+    )
+
+    async def _produce() -> FetchLiveConditionsOutput:
+        return await _fetch_uncached(request)
+
+    result = await cache.get_or_set(cache_key, _produce)
+    log.info(
+        "live_conditions.served",
+        extra={
+            "destination": request.destination,
+            "used_fallback": result.used_fallback,
+            "cache_hits": cache.hits,
+            "cache_misses": cache.misses,
+        },
+    )
+    return result

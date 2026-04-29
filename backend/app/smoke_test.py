@@ -29,11 +29,11 @@ from app.webhooks.dispatcher import deliver_discord_webhook
 async def main() -> None:
     """Run a short pass/fail smoke test."""
 
-    assert ALLOWED_TOOL_NAMES == {
+    assert {
         "retrieve_destination_knowledge",
         "classify_travel_style",
         "fetch_live_conditions",
-    }
+    } == ALLOWED_TOOL_NAMES
 
     password_hash = hash_password("test-password")
     assert verify_password("test-password", password_hash)

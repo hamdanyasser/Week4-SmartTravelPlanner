@@ -21,7 +21,6 @@ from app.schemas.rag import (
     DestinationKnowledgeResponse,
 )
 
-
 MANUAL_RETRIEVAL_TEST_QUERIES = [
     "Madeira warm levada island hiking less touristy",
     "Slovenia Julian Alps Bohinj Soca hiking culture",

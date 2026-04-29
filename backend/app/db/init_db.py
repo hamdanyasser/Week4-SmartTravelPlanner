@@ -11,10 +11,9 @@ import asyncio
 
 from sqlalchemy import text
 
-from app.db.session import Base, dispose_engine, get_engine
-
 # Import models so SQLAlchemy registers their tables on Base.metadata.
 from app import models  # noqa: F401
+from app.db.session import Base, dispose_engine, get_engine
 
 
 async def init_db() -> None:

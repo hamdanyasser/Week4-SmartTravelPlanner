@@ -3,13 +3,32 @@
 // Returns the brief, the loading state, the active timeline stage index,
 // and a flag for whether we fell back to the offline demo because the API
 // was unreachable.
+//
+// If `VITE_USE_STREAMING=true` (or the URL contains `?stream=1`), we drive
+// the timeline from real backend SSE events instead of the fake-but-honest
+// timer. Falls back gracefully to the JSON path on any stream error.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { postTripBrief } from "../api/client";
 import { offlineDemoBrief } from "../api/fallback";
+import { streamTripBrief } from "../api/stream";
 import type { TripBriefResponse } from "../api/types";
 
-export type BriefMode = "live" | "demo";
+export type BriefMode = "live" | "demo" | "live-stream";
+
+const STREAM_STAGE_TO_INDEX: Record<string, number> = {
+  plan: 0,
+  "tool:retrieve_destination_knowledge": 1,
+  "tool:classify_travel_style": 2,
+  "tool:fetch_live_conditions": 3,
+  synthesize: 4,
+};
+
+const useStreaming = (() => {
+  if (import.meta.env.VITE_USE_STREAMING === "true") return true;
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).has("stream");
+})();
 
 export interface BriefState {
   brief: TripBriefResponse | null;
@@ -57,6 +76,30 @@ export function useTripBrief(totalStages: number): BriefState {
     setLoading(false);
   }, []);
 
+  const runStreaming = useCallback(
+    async (query: string, authHeader: Record<string, string>) => {
+      let received: TripBriefResponse | null = null;
+      for await (const event of streamTripBrief(query, authHeader)) {
+        if (event.type === "stage") {
+          const idx = STREAM_STAGE_TO_INDEX[event.stage];
+          if (idx === undefined) continue;
+          if (event.status === "completed" || event.status === "error") {
+            setActiveStage((s) => Math.max(s, idx + 1));
+          } else {
+            setActiveStage((s) => Math.max(s, idx));
+          }
+        } else if (event.type === "brief") {
+          received = event.response;
+        } else if (event.type === "error") {
+          throw new Error(event.message);
+        }
+      }
+      if (!received) throw new Error("Stream ended without a brief.");
+      return received;
+    },
+    [],
+  );
+
   const submit = useCallback(
     async (query: string, authHeader: Record<string, string> = {}) => {
       clearTimer();
@@ -69,20 +112,23 @@ export function useTripBrief(totalStages: number): BriefState {
       setStartedAt(Date.now());
       setFinishedAt(null);
 
-      // Fake-but-honest progress: walk the stages while the request is in
-      // flight. We stop at the second-to-last stage and let the real result
-      // unlock the final two stages, so the timeline never claims to be done
-      // before the backend has actually replied.
-      const ceiling = Math.max(1, totalStages - 2);
-      stageTimer.current = window.setInterval(() => {
-        setActiveStage((s) => (s < ceiling ? s + 1 : s));
-      }, STAGE_INTERVAL_MS);
+      // Fake-but-honest progress (used unless streaming is on): walk the
+      // stages while the request is in flight. We stop at the second-to-last
+      // stage and let the real result unlock the final two stages.
+      if (!useStreaming) {
+        const ceiling = Math.max(1, totalStages - 2);
+        stageTimer.current = window.setInterval(() => {
+          setActiveStage((s) => (s < ceiling ? s + 1 : s));
+        }, STAGE_INTERVAL_MS);
+      }
 
       try {
-        const result = await postTripBrief(query, authHeader);
+        const result = useStreaming
+          ? await runStreaming(query, authHeader)
+          : await postTripBrief(query, authHeader);
         clearTimer();
         setBrief(result);
-        setMode("live");
+        setMode(useStreaming ? "live-stream" : "live");
         setActiveStage(totalStages);
       } catch (err) {
         clearTimer();
@@ -105,7 +151,7 @@ export function useTripBrief(totalStages: number): BriefState {
         setFinishedAt(Date.now() + elapsed - elapsed);
       }
     },
-    [totalStages],
+    [totalStages, runStreaming],
   );
 
   return {

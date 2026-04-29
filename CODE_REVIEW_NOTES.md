@@ -6,6 +6,114 @@ tradeoffs in human terms.
 
 ---
 
+## Engineering hardening + optional extensions (2026-04-29 evening)
+
+### What changed
+
+Closed every remaining engineering-standards gap the brief flags as
+required and shipped four of the optional extensions. Nothing touched
+the `TripBriefResponse` contract or the Decision Tension Board layout.
+
+**Required engineering standards now DONE:**
+
+- **Linters + pre-commit (10.11).** Added [pyproject.toml](pyproject.toml)
+  with ruff + black config, and [.pre-commit-config.yaml](.pre-commit-config.yaml)
+  with hooks for trailing whitespace, EOF, YAML/TOML checks, ruff lint
+  + format, and black. `ruff check backend/app tests` passes clean
+  with `E,F,I,B,UP,SIM,PL,RUF,ANN001/201/202/204` selected. Dev deps
+  pinned in [backend/requirements-dev.txt](backend/requirements-dev.txt)
+  (separate file so the production image stays small).
+- **Structured JSON logs (10.10).** Added
+  [backend/app/logging_config.py](backend/app/logging_config.py) with a
+  stdlib-based `JsonFormatter` and a `_MergingAdapter` so per-call
+  `extra={...}` dicts merge with the adapter's baseline `{"app":
+  "atlasbrief"}` instead of overriding it. Wired into the lifespan in
+  `main.py` and into the trip-brief route, auth route, agent registry,
+  and webhook dispatcher. Every log line is one JSON object on stdout —
+  ready for SEQ / Loki / Better Stack with no code changes.
+- **TTL cache (10.4).** Added [backend/app/cache/ttl.py](backend/app/cache/ttl.py)
+  — a tiny async `TTLCache` with single-flight stampede protection and
+  LRU-style eviction. Wired into
+  [backend/app/tools/fetch_live_conditions.py](backend/app/tools/fetch_live_conditions.py)
+  keyed by `(destination, country, trip_month)`. Default TTL 600 s,
+  configurable via `WEATHER_CACHE_TTL_SECONDS`. `lru_cache(maxsize=1)`
+  remains where it was already paying off (settings, joblib model,
+  embedding provider, local RAG chunks).
+- **Type hints (10.6).** Enabled the ruff `ANN` rules permanently;
+  `ruff check` is clean across all backend code.
+- **Pytest suite (11.1–11.3).** Added 52 tests under [tests/](tests/)
+  covering schema valid/invalid for every Pydantic boundary, every
+  allowlisted tool in isolation (with a stub model for the classifier),
+  the cache (hit/miss/expiry/stampede/eviction), the JSON formatter and
+  merging adapter, the agent registry's allowlist refusal and
+  structured-error path, the LangGraph end-to-end run with deterministic
+  fallbacks, the SSE event lifecycle, the auth/JWT round-trip, the
+  webhook skipped + failure-isolated paths, and the new compare mode.
+  Run with `pytest tests/`.
+- **GitHub Actions CI (11.4).** Added
+  [.github/workflows/ci.yml](.github/workflows/ci.yml) — two jobs
+  (backend lint+tests on Python 3.11 and frontend `tsc -b && vite build`
+  on Node 20). Tests run on every push and PR to `main`.
+
+**Optional extensions shipped:**
+
+- **SSE streaming (7.6).** Added `agent.stream_events` (an async
+  generator that yields one event per stage) plus `POST
+  /api/v1/trip-briefs/stream` returning `text/event-stream`. Frontend
+  consumer in [frontend/src/api/stream.ts](frontend/src/api/stream.ts)
+  and the streaming path in `useTripBrief` is opt-in via
+  `?stream=1` in the URL or `VITE_USE_STREAMING=true`. The cinematic
+  fake-but-honest timer remains the default so reviewers don't
+  accidentally see a half-built code path.
+- **Compare two destinations.** New
+  [backend/app/agent/compare.py](backend/app/agent/compare.py) +
+  schemas in `app/schemas/compare.py` + `POST /api/v1/trip-briefs/compare`.
+  Runs the three tools per destination, picks a dream-fit and reality-pressure
+  winner, and emits a tradeoff verdict. Six tool calls per request.
+- **HITL approval gate.** New `WEBHOOK_REQUIRE_APPROVAL` setting plus
+  `POST /api/v1/agent-runs/{run_id}/approve` (auth required, scoped
+  to the calling user). When approval is required, the trip-brief
+  route logs `trip_brief.awaiting_approval` and skips the webhook;
+  the user's approval call reconstructs the brief from
+  `agent_runs.response_json` and fires the webhook.
+- **MLflow experiment tracking.** Added
+  [backend/app/ml/mlflow_tracking.py](backend/app/ml/mlflow_tracking.py)
+  — a thin wrapper that becomes a no-op when MLflow isn't installed or
+  `MLFLOW_TRACKING_URI` isn't set. `train_classifier.py` calls into it
+  after writing `results.csv` so MLflow becomes a richer dashboard
+  without replacing the source-of-truth file.
+- **Planner-vs-ReAct reflection.** Added
+  [docs/PLANNER_VS_REACT.md](docs/PLANNER_VS_REACT.md) — a defended
+  comparison explaining why AtlasBrief uses planner-then-executor (and
+  when ReAct would actually win).
+
+### What's left
+
+Items that genuinely require external accounts/services or human
+recording on this machine — none of them are work I can finish from a
+code-only session:
+
+- `2.2/5.5/9.x` Live `docker compose up` + pgvector ingest screenshot
+  (Docker Desktop's Linux-engine pipe is missing on this machine).
+- `3.7/12.6` LangSmith trace screenshot (needs LangSmith API key).
+- `4.x/12.5` Real LLM provider routing + real cost numbers (needs
+  OpenAI or Anthropic key).
+- `12.7` 3-minute demo video.
+
+The required nine-feature build, every engineering standard, the test
+suite, CI, and four optional extensions are all DONE in code.
+
+### Verification
+
+- `ruff check backend/app tests` → clean.
+- `pytest tests/ -q` → 52 passed in ~3.4 s.
+- `python -m app.smoke_test` (from `backend/`) → still passes; the
+  golden Madeira path is unchanged.
+- `npm run build` (from `frontend/`) → clean, 50 modules transformed,
+  ~660 ms.
+
+---
+
 ## Submission finalization (2026-04-29)
 
 ### What changed

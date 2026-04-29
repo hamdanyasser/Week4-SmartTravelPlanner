@@ -51,7 +51,7 @@ async def ingest_documents_to_db(
 
     await session.flush()
 
-    for chunk, embedding in zip(chunks, embeddings):
+    for chunk, embedding in zip(chunks, embeddings, strict=False):
         document = document_rows[chunk.source_path]
         session.add(
             DocumentChunk(

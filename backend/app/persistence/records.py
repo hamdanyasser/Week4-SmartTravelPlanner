@@ -12,6 +12,8 @@ from app.models.tool_call import ToolCall
 from app.schemas.tools import ToolExecutionResult
 from app.schemas.trip_brief import TripBriefResponse
 
+UTC = timezone.utc
+
 
 async def _safe_rollback(session: AsyncSession) -> None:
     with suppress(Exception):
@@ -50,7 +52,7 @@ async def fail_agent_run(
     try:
         run.status = "failed"
         run.error = error[:2000]
-        run.completed_at = datetime.now(timezone.utc)
+        run.completed_at = datetime.now(UTC)
         await session.commit()
     except Exception:
         await _safe_rollback(session)
@@ -71,7 +73,7 @@ async def finish_agent_run(
         run.tokens_in = response.meta.tokens_in
         run.tokens_out = response.meta.tokens_out
         run.cost_usd = response.meta.cost_usd
-        run.completed_at = datetime.now(timezone.utc)
+        run.completed_at = datetime.now(UTC)
         await session.commit()
     except Exception:
         await _safe_rollback(session)

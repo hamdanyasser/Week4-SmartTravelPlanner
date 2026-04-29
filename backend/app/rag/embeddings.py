@@ -11,10 +11,10 @@ import hashlib
 import math
 import re
 from dataclasses import dataclass
+from itertools import pairwise
 from typing import Protocol
 
 from app.config import get_settings
-
 
 DEFAULT_EMBEDDING_DIMENSION = 384
 TOKEN_RE = re.compile(r"[a-z0-9]+")
@@ -155,8 +155,7 @@ class DeterministicEmbeddingProvider:
         tokens = tokenize(text)
         weighted_terms: list[tuple[str, float]] = [(token, 1.0) for token in tokens]
         weighted_terms.extend(
-            (f"{left}_{right}", 1.5)
-            for left, right in zip(tokens, tokens[1:])
+            (f"{left}_{right}", 1.5) for left, right in pairwise(tokens)
         )
 
         for term, weight in weighted_terms:
@@ -223,4 +222,4 @@ def cosine_similarity(left: list[float], right: list[float]) -> float:
 
     if len(left) != len(right):
         raise ValueError("Embedding vectors must have the same dimension.")
-    return sum(a * b for a, b in zip(left, right))
+    return sum(a * b for a, b in zip(left, right, strict=False))

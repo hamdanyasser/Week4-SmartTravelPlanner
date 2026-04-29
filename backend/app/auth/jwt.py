@@ -9,6 +9,8 @@ from fastapi import HTTPException, status
 
 from app.config import get_settings
 
+UTC = timezone.utc
+
 
 def create_access_token(user_id: int) -> str:
     """Create a signed JWT for one user id."""
@@ -20,7 +22,7 @@ def create_access_token(user_id: int) -> str:
             detail="JWT_SECRET_KEY is not configured.",
         )
 
-    expires_at = datetime.now(timezone.utc) + timedelta(
+    expires_at = datetime.now(UTC) + timedelta(
         minutes=settings.jwt_access_token_minutes
     )
     payload = {"sub": str(user_id), "exp": expires_at}

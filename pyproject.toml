@@ -1,0 +1,87 @@
+[project]
+name = "atlasbrief"
+version = "0.1.0"
+description = "AtlasBrief — AI Travel Briefing Room (Week 4 Smart Travel Planner)."
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+    ".venv",
+    "backend/.venv",
+    "backend/alembic/versions",
+    "frontend/node_modules",
+    "frontend/dist",
+    "**/__pycache__",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "SIM",
+    "PL",
+    "RUF",
+    "ANN001",
+    "ANN201",
+    "ANN202",
+    "ANN204",
+]
+ignore = [
+    "E501",
+    "PLR0913",
+    "PLR2004",
+    "PLR0911",
+    "PLR0912",
+    "PLR0915",
+    "B008",
+    "SIM108",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    "UP017",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/smoke_test.py" = ["E402"]
+"tests/*.py" = [
+    "PLR2004",
+    "PLR0913",
+    "B011",
+    "B017",
+    "ANN001",
+    "ANN201",
+    "ANN202",
+    "ANN204",
+    "SIM300",
+    "RUF012",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+extend-exclude = '''
+(
+    backend/\.venv
+  | backend/alembic/versions
+  | frontend/node_modules
+  | frontend/dist
+)
+'''
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]

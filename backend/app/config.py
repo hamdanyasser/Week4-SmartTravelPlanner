@@ -66,11 +66,23 @@ class Settings(BaseSettings):
     weather_live_enabled: bool = False
     weather_api_base_url: str = "https://api.open-meteo.com/v1/forecast"
     weather_timeout_seconds: float = 4.0
+    weather_cache_ttl_seconds: float = Field(
+        default=600.0,
+        description="TTL for cached live-conditions tool responses (default 10 minutes).",
+    )
 
     discord_webhook_url: str | None = None
     webhook_timeout_seconds: float = 4.0
     webhook_max_attempts: int = 3
     webhook_enabled: bool = True
+    webhook_require_approval: bool = Field(
+        default=False,
+        description=(
+            "If true, the webhook is NOT fired automatically after a brief "
+            "completes. The user must call POST /api/v1/agent-runs/{id}/approve "
+            "to release it. Useful for human-in-the-loop demos."
+        ),
+    )
 
     database_init_on_startup: bool = False
 

@@ -6,7 +6,6 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
-
 RAG_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = RAG_DIR.parents[2]
 DEFAULT_KNOWLEDGE_ROOT = PROJECT_ROOT / "data" / "knowledge"
