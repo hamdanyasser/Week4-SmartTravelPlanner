@@ -38,3 +38,6 @@ backend/app/ml/**/*.pkl
 
 # Docker
 .docker/
+# Local-only docker compose override (alternate host ports for dev machines
+# whose default ports are taken by other services).
+docker-compose.override.yml

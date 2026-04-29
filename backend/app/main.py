@@ -19,6 +19,7 @@ from app.db.init_db import init_db
 from app.db.session import dispose_engine
 from app.logging_config import configure_logging, get_logger
 from app.ml.service import load_travel_style_model
+from app.tracing import configure_langsmith
 
 log = get_logger(__name__)
 
@@ -29,7 +30,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     settings = get_settings()
     configure_logging(level="DEBUG" if settings.app_debug else "INFO")
-    log.info("app.startup", extra={"env": settings.app_env, "debug": settings.app_debug})
+    langsmith_active = configure_langsmith()
+    log.info(
+        "app.startup",
+        extra={
+            "env": settings.app_env,
+            "debug": settings.app_debug,
+            "langsmith": langsmith_active,
+        },
+    )
 
     app.state.agent = AtlasBriefAgent()
     app.state.ml_model = None

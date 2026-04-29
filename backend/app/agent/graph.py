@@ -81,7 +81,7 @@ class AtlasBriefAgent:
         return {"tool_results": results}
 
     async def _synthesize(self, state: AgentState) -> AgentState:
-        response = synthesize_trip_brief(
+        response = await synthesize_trip_brief(
             query=state["query"],
             plan=state["plan"],
             tool_results=state["tool_results"],
@@ -172,7 +172,7 @@ class AtlasBriefAgent:
             }
 
         yield {"type": "stage", "stage": "synthesize", "status": "started"}
-        response = synthesize_trip_brief(query=query, plan=plan, tool_results=results)
+        response = await synthesize_trip_brief(query=query, plan=plan, tool_results=results)
         yield {"type": "stage", "stage": "synthesize", "status": "completed"}
         yield {"type": "brief", "response": response.model_dump(mode="json")}
         yield {"type": "done"}

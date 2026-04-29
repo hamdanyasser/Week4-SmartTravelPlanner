@@ -60,8 +60,36 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_minutes: int = 120
 
+    langchain_api_key: str | None = Field(
+        default=None,
+        description=(
+            "LangSmith API key. When set, agent runs are traced to LangSmith "
+            "automatically via the langchain env-var protocol."
+        ),
+    )
+    langchain_project: str = "atlasbrief"
+    langchain_endpoint: str = "https://api.smith.langchain.com"
+
     cheap_model_name: str = "deterministic-extractor"
     strong_model_name: str = "deterministic-synthesizer"
+    cheap_model_provider: str = Field(
+        default="auto",
+        description=(
+            "auto | anthropic | openai | none. 'auto' picks the cheap-class "
+            "model from whichever provider key is present; 'none' forces the "
+            "deterministic fallback even when keys are set."
+        ),
+    )
+    strong_model_provider: str = Field(
+        default="auto",
+        description="auto | anthropic | openai | none.",
+    )
+    anthropic_cheap_model: str = "claude-haiku-4-5-20251001"
+    anthropic_strong_model: str = "claude-sonnet-4-6"
+    openai_cheap_model: str = "gpt-4o-mini"
+    openai_strong_model: str = "gpt-4o"
+    llm_max_output_tokens: int = 600
+    llm_request_timeout_seconds: float = 30.0
 
     weather_live_enabled: bool = False
     weather_api_base_url: str = "https://api.open-meteo.com/v1/forecast"

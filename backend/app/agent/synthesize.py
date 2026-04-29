@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.llm.router import final_synthesis_usage
+from app.llm.router import try_strong_synthesis
 from app.schemas.llm import TripPlan
 from app.schemas.rag import DestinationKnowledgeResponse
 from app.schemas.tools import (
@@ -19,6 +19,15 @@ from app.schemas.trip_brief import (
     TravelStyle,
     TripBriefMeta,
     TripBriefResponse,
+)
+
+SYNTHESIS_SYSTEM_PROMPT = (
+    "You are AtlasBrief, an executive-style travel briefing agent. "
+    "Given a user query and three tool outputs (RAG evidence, ML travel-style "
+    "classification, live conditions), return ONE paragraph (max 90 words) "
+    "that names the tradeoff between the dream side (RAG + ML) and the "
+    "reality side (weather + flights). Be concrete and decisive; never "
+    "hedge with 'might' or 'could'."
 )
 
 
@@ -78,12 +87,40 @@ def _trace(results: list[ToolExecutionResult]) -> list[ToolTraceEntry]:
     ]
 
 
-def synthesize_trip_brief(
+def _build_synthesis_user_prompt(
+    query: str,
+    plan: TripPlan,
+    rag: DestinationKnowledgeResponse,
+    ml: ClassifyTravelStyleOutput,
+    live: FetchLiveConditionsOutput,
+) -> str:
+    """Compact user prompt for the strong synthesis step."""
+
+    rag_snippet = (rag.results[0].content[:400] + "...") if rag.results else "no rag evidence"
+    return (
+        f"Query: {query}\n"
+        f"Pick: {plan.destination} ({plan.country}). Counterfactual: {plan.counterfactual_destination}.\n"
+        f"Matched traits: {', '.join(plan.matched_traits) or 'none'}.\n"
+        f"RAG evidence: {rag_snippet}\n"
+        f"ML predicted travel style: {ml.predicted_style.value} (confidence {ml.confidence:.2f}, "
+        f"used_fallback={ml.used_fallback}).\n"
+        f"Live weather: {live.weather_signal}\n"
+        f"Live flights: {live.flight_signal}\n"
+        f"Pressure score: {int(live.pressure_score)}/100 (used_fallback={live.used_fallback}).\n"
+        "Write ONE paragraph naming the dream-vs-reality tradeoff and a clear recommendation."
+    )
+
+
+async def synthesize_trip_brief(
     query: str,
     plan: TripPlan,
     tool_results: list[ToolExecutionResult],
 ) -> TripBriefResponse:
-    """Create the Decision Tension Board from tool outputs."""
+    """Create the Decision Tension Board from tool outputs.
+
+    Uses the real strong-model provider if a key is set; otherwise emits the
+    deterministic verdict so local demos never depend on network calls.
+    """
 
     rag_raw = _tool_output(tool_results, "retrieve_destination_knowledge")
     ml_raw = _tool_output(tool_results, "classify_travel_style")
@@ -133,25 +170,32 @@ def synthesize_trip_brief(
     if evidence:
         rationale = evidence[:260].rstrip() + "..."
 
-    final_usage = final_synthesis_usage(
-        f"{query} {rationale} {live.weather_signal} {live.flight_signal}"
+    user_prompt = _build_synthesis_user_prompt(query, plan, rag, ml, live)
+    provider_text, final_usage = await try_strong_synthesis(
+        SYNTHESIS_SYSTEM_PROMPT,
+        user_prompt,
+        step="synthesize_trip_brief",
     )
+
+    if provider_text:
+        final_verdict = provider_text
+    else:
+        final_verdict = (
+            f"{plan.destination} is the strongest pick because the dream side is "
+            f"clear: {', '.join(plan.matched_traits)}. The reality side is not "
+            f"ignored: {live.flight_signal.lower()} The tension is manageable, "
+            "so the recommendation is to book early and keep one weather-flex day."
+        )
+        if live.pressure_score < 55:
+            final_verdict = (
+                f"{plan.destination} still fits the dream, but reality pressure is "
+                f"meaningful: {live.weather_signal} {live.flight_signal} Treat this "
+                "as a cautious recommendation, not a carefree one."
+            )
+
     total_tokens_in = plan.cheap_usage.tokens_in + final_usage.tokens_in
     total_tokens_out = plan.cheap_usage.tokens_out + final_usage.tokens_out
     total_cost = plan.cheap_usage.cost_usd + final_usage.cost_usd
-
-    final_verdict = (
-        f"{plan.destination} is the strongest pick because the dream side is "
-        f"clear: {', '.join(plan.matched_traits)}. The reality side is not "
-        f"ignored: {live.flight_signal.lower()} The tension is manageable, "
-        "so the recommendation is to book early and keep one weather-flex day."
-    )
-    if live.pressure_score < 55:
-        final_verdict = (
-            f"{plan.destination} still fits the dream, but reality pressure is "
-            f"meaningful: {live.weather_signal} {live.flight_signal} Treat this "
-            "as a cautious recommendation, not a carefree one."
-        )
 
     return TripBriefResponse(
         query=query,

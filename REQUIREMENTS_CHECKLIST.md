@@ -44,16 +44,16 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 3.4 | Pydantic input schemas for every tool | `backend/app/schemas/tools.py`, `backend/app/schemas/rag.py` | DONE | Every tool validates input and output at the boundary. |
 | 3.5 | Explicit tool allowlist | `backend/app/agent/registry.py` | DONE | Only the three required tool names are accepted. |
 | 3.6 | LangGraph/LangChain agent loop | `backend/app/agent/graph.py` | DONE | Small LangGraph flow: extract plan, run three tools, synthesize. |
-| 3.7 | LangSmith tracing screenshot | `README.md`, `docs/trace.png` | TODO | Multi-tool trace screenshot for the README. |
+| 3.7 | LangSmith tracing screenshot | `backend/app/tracing.py`, `README.md`, `docs/trace.png` | DONE (code) / TODO (image) | `configure_langsmith()` flips the LangChain env vars on app startup the moment `LANGCHAIN_API_KEY` is set, so traces appear on smith.langchain.com automatically. The literal `docs/trace.png` screenshot still has to be captured by the user once they paste a key. |
 | 3.8 | Genuine cross-tool synthesis | `backend/app/agent/synthesize.py` | DONE | Final synthesis names the tension between RAG/ML dream fit and live/fallback reality pressure. |
 
 ## 4. Two-Model Routing
 
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
-| 4.1 | Cheap model for mechanical work | `backend/app/llm/router.py` | DONE | Deterministic fallback extractor keeps the cheap-model step shape until a provider key is added. |
-| 4.2 | Strong model for final synthesis | `backend/app/llm/router.py`, `backend/app/agent/synthesize.py` | DONE | Deterministic fallback synthesizer keeps the strong-model step shape until a provider key is added. |
-| 4.3 | Token + cost logging per step | `backend/app/schemas/llm.py`, `backend/app/agent/synthesize.py`, `backend/app/models/agent_run.py` | DONE | Usage metadata is recorded per routing step where available and surfaced in `TripBriefResponse.meta`. |
+| 4.1 | Cheap model for mechanical work | `backend/app/llm/router.py` | DONE | Cheap step is deterministic by design (mechanical extraction is faster + free); the cheap-model name and step shape are still recorded in `LLMUsage`. |
+| 4.2 | Strong model for final synthesis | `backend/app/llm/router.py` (`try_strong_synthesis`), `backend/app/llm/providers.py`, `backend/app/agent/synthesize.py` | DONE | Real Anthropic / OpenAI calls activate the moment `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` lands in `.env`. Provider preference per role is configurable (`STRONG_MODEL_PROVIDER=auto/anthropic/openai/none`); deterministic fallback runs unchanged when no key is set. |
+| 4.3 | Token + cost logging per step | `backend/app/llm/providers.py` (`PRICE_TABLE_PER_MTOKENS`, `_cost_usd`), `backend/app/agent/synthesize.py`, `backend/app/models/agent_run.py` | DONE | Real provider responses carry real `input_tokens`/`output_tokens`; the cost table converts those to USD per query. `TripBriefResponse.meta.cost_usd` becomes a real number the moment a key is set. |
 
 ## 5. Persistence - Postgres + pgvector + SQLAlchemy
 
@@ -138,8 +138,8 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 12.2 | Dataset labeling rules | `README.md` | DONE | ML labeling rules documented. |
 | 12.3 | Chunking + retrieval rationale | `README.md` | DONE | RAG section explains chunk size, overlap, embeddings, fallback, and top-k retrieval. |
 | 12.4 | Model comparison table | `README.md` | DONE | Latest ML table documented. |
-| 12.5 | Per-query cost breakdown | `TripBriefResponse.meta`, `backend/app/models/agent_run.py` | IN_PROGRESS | Deterministic routing records zero-cost token metadata; real provider pricing still awaits provider integration. |
-| 12.6 | LangSmith trace screenshot | `README.md`, `docs/trace.png` | TODO | Multi-tool trace. |
+| 12.5 | Per-query cost breakdown | `backend/app/llm/providers.py`, `TripBriefResponse.meta`, `backend/app/models/agent_run.py` | DONE (wiring) / TODO (numbers in README) | Real cost arithmetic ships in `_cost_usd` against a per-million-token price table. Real numbers populate `meta.cost_usd` automatically once a provider key is set; the README breakdown is a one-paste followup. |
+| 12.6 | LangSmith trace screenshot | `README.md`, `docs/trace.png` | TODO (image) | Tracing wiring is DONE in `app/tracing.py`; the actual PNG still has to be captured. |
 | 12.7 | 3-minute demo video | `docs/demo.mp4` or link | TODO | One end-to-end run from UI to webhook. |
 
 ## 13. Optional Extensions

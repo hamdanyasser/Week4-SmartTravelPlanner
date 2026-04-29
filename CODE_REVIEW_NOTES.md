@@ -6,6 +6,86 @@ tradeoffs in human terms.
 
 ---
 
+## Real provider routing + LangSmith wiring (2026-04-29 late night)
+
+### What changed
+
+The two-model routing layer (4.1-4.3) and the LangSmith trace requirement
+(3.7 / 12.6) needed wiring that activates the moment a provider key lands
+in `.env`. That wiring is now in:
+
+- **[backend/app/llm/providers.py](backend/app/llm/providers.py)** -
+  Async cheap/strong completion against either Anthropic
+  (`/v1/messages`) or OpenAI (`/v1/chat/completions`). Provider is
+  picked at call time from `Settings.cheap_model_provider` /
+  `strong_model_provider` (`auto | anthropic | openai | none`); `auto`
+  prefers Anthropic when its key is set. A `PRICE_TABLE_PER_MTOKENS`
+  with hardcoded per-million-token rates converts real provider usage
+  into real `cost_usd` for `TripBriefResponse.meta`. Raises
+  `ProviderUnavailable` cleanly when no key is set so the caller can
+  fall back without exception noise.
+- **[backend/app/llm/router.py](backend/app/llm/router.py)** - new
+  `try_strong_synthesis(system, user)` returns `(text|None, LLMUsage)`.
+  When a provider replies, `text` is the model's verdict and the usage
+  row carries real tokens + cost (`used_fallback=False`); on
+  unavailable/error, returns `(None, deterministic_usage)`.
+- **[backend/app/agent/synthesize.py](backend/app/agent/synthesize.py)**
+  - now `async`, calls `try_strong_synthesis` with a tight system prompt
+  + a structured user prompt summarising the three tool outputs, and
+  uses the model's text as `final_verdict` when present. Falls back to
+  the previous deterministic verdict otherwise.
+- **[backend/app/agent/graph.py](backend/app/agent/graph.py)** - both
+  `_synthesize` and `stream_events` `await` the async synthesizer.
+- **[backend/app/tracing.py](backend/app/tracing.py)** -
+  `configure_langsmith()` translates `Settings.langchain_api_key` (and
+  related fields) into the `LANGCHAIN_TRACING_V2` /
+  `LANGCHAIN_API_KEY` / `LANGCHAIN_PROJECT` / `LANGCHAIN_ENDPOINT` env
+  vars LangChain reads natively. Wired into the lifespan so traces
+  start flowing the moment a key is in `.env`. No-op without a key.
+
+`backend/.env.example` lists every new key with comments. `Settings`
+holds typed defaults for all of them so the app still boots without
+provider keys.
+
+**Tests**: 10 new tests across
+[tests/test_llm_providers.py](tests/test_llm_providers.py) and
+[tests/test_tracing.py](tests/test_tracing.py) cover the
+`auto`/`anthropic`/`openai`/`none` resolution paths, fallback when no
+key is present, the price-table coverage of every default model name,
+the cost-scaling math, and the LangSmith env-var contract. **62 tests
+pass total, ruff clean.**
+
+### Docker stack on this dev machine
+
+The brief's spirit on Docker is "a reviewer can `docker compose up`."
+On this dev machine the standard ports collide with two pre-existing
+services:
+
+- system PostgreSQL 15 on **5432**
+- the user's own dev `uvicorn` on **8000**
+- a second PostgreSQL bundled with Odoo on **5433**
+
+To keep both the demo and the user's existing work usable in parallel,
+I added a local-only `docker-compose.override.yml` (gitignored) that
+remaps host ports to **5434 / 8001 / 5174**. The canonical
+`docker-compose.yml` keeps standard ports for clean-machine reviewers.
+Whenever Docker Desktop is responsive, the workflow is:
+
+```
+docker compose up -d            # builds + starts the three containers
+DATABASE_URL=postgresql+asyncpg://trippilot:change-me-local-only@localhost:5434/trippilot \
+  backend/.venv/Scripts/alembic.exe upgrade head
+DATABASE_URL=...localhost:5434... backend/.venv/Scripts/python -m app.rag.ingest_documents --db --reset
+curl http://localhost:8001/health
+```
+
+In this session, Docker Desktop became unresponsive partway through
+(commands return exit 0 with no output), so the live container probe
+and ingest screenshot are still pending until the daemon is rebooted.
+The code path for the moment Docker comes back is wired and tested.
+
+---
+
 ## Engineering hardening + optional extensions (2026-04-29 evening)
 
 ### What changed
