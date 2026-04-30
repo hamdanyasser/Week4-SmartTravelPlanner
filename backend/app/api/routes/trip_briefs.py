@@ -15,7 +15,7 @@ from app.agent.compare import compare_destinations
 from app.agent.graph import AtlasBriefAgent
 from app.api.deps import get_current_user, get_optional_current_user
 from app.config import get_settings
-from app.db.session import get_session
+from app.db.session import get_session, get_session_factory
 from app.logging_config import get_logger
 from app.models.agent_run import AgentRun
 from app.models.user import User
@@ -39,6 +39,21 @@ def _agent_from_app(request: Request) -> AtlasBriefAgent:
     if isinstance(agent, AtlasBriefAgent):
         return agent
     return AtlasBriefAgent()
+
+
+async def _deliver_webhook_with_session(
+    brief: TripBriefResponse,
+    agent_run_id: int | None,
+) -> None:
+    """Deliver a webhook with a fresh DB session for delivery logging."""
+
+    session_factory = get_session_factory()
+    async with session_factory() as webhook_session:
+        await deliver_discord_webhook(
+            brief=brief,
+            session=webhook_session,
+            agent_run_id=agent_run_id,
+        )
 
 
 @router.post("/trip-briefs", response_model=TripBriefResponse)
@@ -118,10 +133,9 @@ async def create_trip_brief(
         log.info("trip_brief.awaiting_approval", extra={"run_id": run_id})
     else:
         background_tasks.add_task(
-            deliver_discord_webhook,
-            brief=response,
-            session=None,
-            agent_run_id=run_id,
+            _deliver_webhook_with_session,
+            response,
+            run_id,
         )
     return response
 
@@ -185,10 +199,9 @@ async def approve_agent_run(
 
     brief = TripBriefResponse.model_validate(run.response_json)
     background_tasks.add_task(
-        deliver_discord_webhook,
-        brief=brief,
-        session=None,
-        agent_run_id=run.id,
+        _deliver_webhook_with_session,
+        brief,
+        run.id,
     )
     log.info("trip_brief.approved", extra={"run_id": run.id, "user_id": current_user.id})
     return brief
@@ -234,6 +247,8 @@ async def stream_trip_brief(
             async for event in agent.stream_events(
                 query=payload.query, session=session, ml_model=ml_model
             ):
+                if event.get("type") == "stage" and event.get("tool_result"):
+                    tool_results.append(ToolExecutionResult.model_validate(event["tool_result"]))
                 if event.get("type") == "brief":
                     final_response = TripBriefResponse.model_validate(event["response"])
                 yield _sse_event(event.get("type", "message"), event)
@@ -262,16 +277,23 @@ async def stream_trip_brief(
 
         final_response.meta.latency_ms = int((time.perf_counter() - started) * 1000)
 
-        # Persistence + webhook still happen, just after the stream is drained.
-        # tool_results are reconstructed from the streamed events on the
-        # client; for storage we re-run the synthesis path's bookkeeping.
-        await persist_tool_calls(
-            session=session,
-            run=agent_run,
-            tool_results=tool_results,
-            user_id=user_id,
-        )
-        await finish_agent_run(session=session, run=agent_run, response=final_response)
+        # The stream body runs after the response starts, so use a fresh DB
+        # session for final persistence instead of depending on the request
+        # session's lifetime.
+        session_factory = get_session_factory()
+        async with session_factory() as persistence_session:
+            run_for_persist = await persistence_session.get(AgentRun, run_id) if run_id else None
+            await persist_tool_calls(
+                session=persistence_session,
+                run=run_for_persist,
+                tool_results=tool_results,
+                user_id=user_id,
+            )
+            await finish_agent_run(
+                session=persistence_session,
+                run=run_for_persist,
+                response=final_response,
+            )
         log.info(
             "trip_brief.stream_completed",
             extra={
@@ -282,10 +304,9 @@ async def stream_trip_brief(
             },
         )
         background_tasks.add_task(
-            deliver_discord_webhook,
-            brief=final_response,
-            session=None,
-            agent_run_id=run_id,
+            _deliver_webhook_with_session,
+            final_response,
+            run_id,
         )
 
     return StreamingResponse(

@@ -154,9 +154,7 @@ class DeterministicEmbeddingProvider:
         vector = [0.0] * self.dimension
         tokens = tokenize(text)
         weighted_terms: list[tuple[str, float]] = [(token, 1.0) for token in tokens]
-        weighted_terms.extend(
-            (f"{left}_{right}", 1.5) for left, right in pairwise(tokens)
-        )
+        weighted_terms.extend((f"{left}_{right}", 1.5) for left, right in pairwise(tokens))
 
         for term, weight in weighted_terms:
             if term in DOMAIN_INDEX and DOMAIN_INDEX[term] < self.dimension:

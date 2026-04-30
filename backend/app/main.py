@@ -16,9 +16,10 @@ from app.agent.graph import AtlasBriefAgent
 from app.api.routes import auth, health, trip_briefs
 from app.config import get_settings
 from app.db.init_db import init_db
-from app.db.session import dispose_engine
+from app.db.session import dispose_engine, get_session_factory
 from app.logging_config import configure_logging, get_logger
 from app.ml.service import load_travel_style_model
+from app.rag.ingest_documents import seed_rag_if_empty
 from app.tracing import configure_langsmith
 
 log = get_logger(__name__)
@@ -66,6 +67,26 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             )
             log.warning(
                 "db.init_skipped",
+                extra={"exc_class": exc.__class__.__name__, "exc": str(exc)},
+            )
+
+    if settings.rag_ingest_on_startup:
+        try:
+            session_factory = get_session_factory()
+            async with session_factory() as session:
+                ingest_stats = await seed_rag_if_empty(session=session)
+            ingest_log = ingest_stats.model_dump(mode="json")
+            ingest_log["rag_message"] = ingest_log.pop("message", None)
+            log.info(
+                "rag.seed_ok",
+                extra=ingest_log,
+            )
+        except Exception as exc:
+            app.state.startup_warnings.append(
+                f"RAG startup ingest skipped after failure: {exc.__class__.__name__}"
+            )
+            log.warning(
+                "rag.seed_skipped",
                 extra={"exc_class": exc.__class__.__name__, "exc": str(exc)},
             )
 

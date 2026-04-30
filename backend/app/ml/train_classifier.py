@@ -62,8 +62,8 @@ from app.ml.mlflow_tracking import (
 # --- Paths ---------------------------------------------------------------
 # We resolve paths from this file so the script works whether you run it
 # from the repo root, from `backend/`, or from anywhere else.
-ML_DIR = Path(__file__).resolve().parent             # backend/app/ml
-PROJECT_ROOT = ML_DIR.parents[2]                     # repo root
+ML_DIR = Path(__file__).resolve().parent  # backend/app/ml
+PROJECT_ROOT = ML_DIR.parents[2]  # repo root
 DATA_PATH = PROJECT_ROOT / "data" / "destinations.csv"
 RESULTS_PATH = ML_DIR / "results.csv"
 MODEL_PATH = ML_DIR / "model.joblib"
@@ -283,10 +283,7 @@ def append_results(
 def main() -> None:
     print(f"Loading dataset from {DATA_PATH}")
     df, X, y = load_data()
-    print(
-        f"Rows: {len(df)} | Features: {len(FEATURES)} "
-        f"| Classes: {sorted(y.unique())}"
-    )
+    print(f"Rows: {len(df)} | Features: {len(FEATURES)} " f"| Classes: {sorted(y.unique())}")
     print("Class counts:")
     for label, count in y.value_counts().items():
         print(f"  {label:<11s} {count}")
@@ -309,18 +306,12 @@ def main() -> None:
     # All candidates (3 baselines + 1 tuned variant) compete on mean macro-F1.
     # The actual winner is saved with joblib — we don't pre-commit to RF.
     candidates: list[tuple[str, Pipeline, float]] = [
-        (row["model"], pipelines[row["model"]], float(row["f1_macro_mean"]))
-        for row in summary
+        (row["model"], pipelines[row["model"]], float(row["f1_macro_mean"])) for row in summary
     ]
-    candidates.append(
-        ("random_forest_tuned", search.best_estimator_, float(search.best_score_))
-    )
+    candidates.append(("random_forest_tuned", search.best_estimator_, float(search.best_score_)))
     candidates.sort(key=lambda item: item[2], reverse=True)
     winner_name, winner_pipeline, winner_score = candidates[0]
-    print(
-        f"\n=== Winner: {winner_name} "
-        f"(mean macro-F1 = {winner_score:.4f}) ==="
-    )
+    print(f"\n=== Winner: {winner_name} " f"(mean macro-F1 = {winner_score:.4f}) ===")
 
     # GridSearchCV's best_estimator_ is already fit on the full data because
     # we set refit=True. The plain baselines from build_pipelines() are not,

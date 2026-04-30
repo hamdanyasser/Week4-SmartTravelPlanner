@@ -31,5 +31,10 @@ def test_configure_langsmith_sets_envs_when_key_present(monkeypatch):
     assert os.environ["LANGCHAIN_PROJECT"] == "atlas-test"
 
     # Clean up so the assertion in the previous test isn't polluted on reorder.
-    for key in ("LANGCHAIN_TRACING_V2", "LANGCHAIN_API_KEY", "LANGCHAIN_PROJECT", "LANGCHAIN_ENDPOINT"):
+    for key in (
+        "LANGCHAIN_TRACING_V2",
+        "LANGCHAIN_API_KEY",
+        "LANGCHAIN_PROJECT",
+        "LANGCHAIN_ENDPOINT",
+    ):
         os.environ.pop(key, None)

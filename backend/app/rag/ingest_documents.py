@@ -6,7 +6,7 @@ import argparse
 import asyncio
 from pathlib import Path
 
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.init_db import init_db
@@ -73,6 +73,38 @@ async def ingest_documents_to_db(
         embedding_provider=provider.name,
         used_database=True,
         message="Stored chunks and embeddings in Postgres/pgvector.",
+    )
+
+
+async def seed_rag_if_empty(
+    session: AsyncSession,
+    knowledge_root: Path = DEFAULT_KNOWLEDGE_ROOT,
+    provider: EmbeddingProvider | None = None,
+) -> RagIngestStats:
+    """Populate pgvector once for fresh Docker/Postgres databases."""
+
+    provider = provider or get_embedding_provider()
+    chunk_count = int(await session.scalar(select(func.count(DocumentChunk.id))) or 0)
+    if chunk_count > 0:
+        document_count = int(await session.scalar(select(func.count(DestinationDocument.id))) or 0)
+        destination_count = int(
+            await session.scalar(select(func.count(func.distinct(DestinationDocument.destination))))
+            or 0
+        )
+        return RagIngestStats(
+            documents=document_count,
+            destinations=destination_count,
+            chunks=chunk_count,
+            embedding_provider=provider.name,
+            used_database=True,
+            message="Postgres/pgvector already contains chunks; skipped startup ingest.",
+        )
+
+    return await ingest_documents_to_db(
+        session=session,
+        knowledge_root=knowledge_root,
+        provider=provider,
+        reset=False,
     )
 
 

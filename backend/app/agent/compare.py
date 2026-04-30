@@ -49,7 +49,9 @@ def _summary(result: ToolExecutionResult) -> str:
         return result.error.message if result.error else "tool error"
     output = result.output or {}
     if result.tool_name == "classify_travel_style":
-        return f"{output.get('predicted_style', '?')} (confidence {output.get('confidence', 0):.2f})"
+        return (
+            f"{output.get('predicted_style', '?')} (confidence {output.get('confidence', 0):.2f})"
+        )
     if result.tool_name == "fetch_live_conditions":
         return f"pressure {int(output.get('pressure_score', 0))}/100"
     rag_results = output.get("results") or []
@@ -89,9 +91,7 @@ async def _candidate_for(
         "trip_month": "July",
     }
 
-    rag_result = await execute_tool(
-        "retrieve_destination_knowledge", rag_payload, session=session
-    )
+    rag_result = await execute_tool("retrieve_destination_knowledge", rag_payload, session=session)
     classify_result = await execute_tool(
         "classify_travel_style", classify_payload, ml_model=ml_model
     )
@@ -124,13 +124,15 @@ async def _candidate_for(
         )
     )
 
-    rationale = rag.results[0].content[:240] + "..." if rag.results else (
-        f"{destination} fits the brief on the dream side; pressure is moderate."
+    rationale = (
+        rag.results[0].content[:240] + "..."
+        if rag.results
+        else (f"{destination} fits the brief on the dream side; pressure is moderate.")
     )
     dream_score = 80 if rag.results else 70
-    matched_traits = ["warm", "hiking"] if "warm" in query.lower() or "hike" in query.lower() else [
-        "scenery"
-    ]
+    matched_traits = (
+        ["warm", "hiking"] if "warm" in query.lower() or "hike" in query.lower() else ["scenery"]
+    )
 
     candidate = DestinationCandidate(
         name=destination,
@@ -164,7 +166,9 @@ async def compare_destinations(
     candidate_b, tools_b = await _candidate_for(query, destinations[1], session, ml_model)
 
     dream_fit_winner = (
-        candidate_a.name if candidate_a.dream_fit.score >= candidate_b.dream_fit.score else candidate_b.name
+        candidate_a.name
+        if candidate_a.dream_fit.score >= candidate_b.dream_fit.score
+        else candidate_b.name
     )
     reality_winner = (
         candidate_a.name

@@ -22,9 +22,7 @@ def create_access_token(user_id: int) -> str:
             detail="JWT_SECRET_KEY is not configured.",
         )
 
-    expires_at = datetime.now(UTC) + timedelta(
-        minutes=settings.jwt_access_token_minutes
-    )
+    expires_at = datetime.now(UTC) + timedelta(minutes=settings.jwt_access_token_minutes)
     payload = {"sub": str(user_id), "exp": expires_at}
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 

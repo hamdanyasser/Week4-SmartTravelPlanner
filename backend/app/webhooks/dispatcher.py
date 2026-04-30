@@ -68,7 +68,9 @@ async def deliver_discord_webhook(
     if not settings.webhook_enabled or not settings.discord_webhook_url:
         result = WebhookResult(status="skipped", attempts=0, error="No Discord webhook configured.")
         await _store_delivery(session, agent_run_id, result)
-        log.info("webhook.skipped", extra={"agent_run_id": agent_run_id, "reason": "not_configured"})
+        log.info(
+            "webhook.skipped", extra={"agent_run_id": agent_run_id, "reason": "not_configured"}
+        )
         return result
 
     attempts = 0
@@ -81,9 +83,7 @@ async def deliver_discord_webhook(
         ):
             with attempt:
                 attempts += 1
-                async with httpx.AsyncClient(
-                    timeout=settings.webhook_timeout_seconds
-                ) as client:
+                async with httpx.AsyncClient(timeout=settings.webhook_timeout_seconds) as client:
                     response = await client.post(
                         settings.discord_webhook_url,
                         json={"content": _message_from_brief(brief)},

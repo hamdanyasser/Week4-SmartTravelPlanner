@@ -108,11 +108,7 @@ def iter_markdown_documents(root: Path = DEFAULT_KNOWLEDGE_ROOT) -> list[SourceD
 
     if not root.exists():
         raise FileNotFoundError(f"Knowledge root does not exist: {root}")
-    return [
-        load_markdown_document(path)
-        for path in sorted(root.rglob("*.md"))
-        if path.is_file()
-    ]
+    return [load_markdown_document(path) for path in sorted(root.rglob("*.md")) if path.is_file()]
 
 
 def chunk_text(

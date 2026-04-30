@@ -69,7 +69,9 @@ def _resolve_provider(role: str, settings: Settings) -> tuple[str, str]:
     if pref == "anthropic":
         if not settings.anthropic_api_key:
             raise ProviderUnavailable(f"{role}: anthropic forced but no key set.")
-        model = settings.anthropic_cheap_model if role == "cheap" else settings.anthropic_strong_model
+        model = (
+            settings.anthropic_cheap_model if role == "cheap" else settings.anthropic_strong_model
+        )
         return "anthropic", model
 
     if pref == "openai":
@@ -80,7 +82,9 @@ def _resolve_provider(role: str, settings: Settings) -> tuple[str, str]:
 
     # auto: prefer Anthropic if its key is set, else OpenAI.
     if settings.anthropic_api_key:
-        model = settings.anthropic_cheap_model if role == "cheap" else settings.anthropic_strong_model
+        model = (
+            settings.anthropic_cheap_model if role == "cheap" else settings.anthropic_strong_model
+        )
         return "anthropic", model
     if settings.openai_api_key:
         model = settings.openai_cheap_model if role == "cheap" else settings.openai_strong_model

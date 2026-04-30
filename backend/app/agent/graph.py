@@ -169,6 +169,7 @@ class AtlasBriefAgent:
                 "stage": f"tool:{name}",
                 "status": "completed" if result.ok else "error",
                 "ok": result.ok,
+                "tool_result": result.model_dump(mode="json"),
             }
 
         yield {"type": "stage", "stage": "synthesize", "status": "started"}

@@ -155,10 +155,9 @@ project without paging through code.
   plug in behind `get_embedding_provider`.
 - **Live weather**: gated by `WEATHER_LIVE_ENABLED`. Off in defaults
   for reproducible demos; on, it calls Open-Meteo.
-- **pgvector retrieval**: implemented and exercised by tests in code,
-  but live ingest+retrieval is environment-blocked on this machine
-  because Docker Desktop's pipe is down. Fallback retriever is what's
-  proven on this hardware.
+- **pgvector retrieval**: live Docker ingest is verified. The bundled
+  corpus seeds into Postgres/pgvector when the chunk table is empty, and
+  the API trace shows pgvector chunks when the database is populated.
 - **Webhook**: Discord URL is empty by default → delivery is `skipped`.
 - **LangSmith trace screenshot**: capture during the demo.
 
