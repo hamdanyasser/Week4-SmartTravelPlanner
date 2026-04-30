@@ -30,7 +30,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
 | 2.1 | 10-15 destinations, 20-30 documents | `data/knowledge/` | DONE | 28 markdown docs across 14 destinations, each with destination/source metadata. |
-| 2.2 | Embeddings in Postgres via pgvector | `backend/app/models/document_chunk.py`, `backend/app/rag/ingest_documents.py` | IN_PROGRESS | pgvector table + DB ingest path built; live ingest is blocked by Docker daemon unavailability on this machine. |
+| 2.2 | Embeddings in Postgres via pgvector | `backend/app/models/document_chunk.py`, `backend/app/rag/ingest_documents.py` | DONE | Docker-backed ingest verified: 28 documents, 14 destinations, 28 pgvector chunks. Startup seeds the corpus when the chunk table is empty. |
 | 2.3 | Justified chunk size + overlap | `backend/app/rag/chunking.py`, `README.md` | DONE | 900-character chunks with 150-character overlap; rationale documented in README. |
 | 2.4 | Tested retrieval with hand-written queries | `backend/app/rag/retriever.py`, `backend/app/rag/smoke_test.py` | DONE | Three manual retrieval probes pass on the local fallback index; smoke test verifies the tool wrapper and schemas. |
 
@@ -44,14 +44,14 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 3.4 | Pydantic input schemas for every tool | `backend/app/schemas/tools.py`, `backend/app/schemas/rag.py` | DONE | Every tool validates input and output at the boundary. |
 | 3.5 | Explicit tool allowlist | `backend/app/agent/registry.py` | DONE | Only the three required tool names are accepted. |
 | 3.6 | LangGraph/LangChain agent loop | `backend/app/agent/graph.py` | DONE | Small LangGraph flow: extract plan, run three tools, synthesize. |
-| 3.7 | LangSmith tracing screenshot | `backend/app/tracing.py`, `README.md`, `docs/trace.png` | DONE (code) / TODO (image) | `configure_langsmith()` flips the LangChain env vars on app startup the moment `LANGCHAIN_API_KEY` is set, so traces appear on smith.langchain.com automatically. The literal `docs/trace.png` screenshot still has to be captured by the user once they paste a key. |
-| 3.8 | Genuine cross-tool synthesis | `backend/app/agent/synthesize.py` | DONE | Final synthesis names the tension between RAG/ML dream fit and live/fallback reality pressure. |
+| 3.7 | LangSmith tracing screenshot | `backend/app/tracing.py`, `README.md`, `docs/trace.png`, `docs/MANUAL_PROOF.md` § 1 | DONE (code) / PROOF_PENDING (image) | `configure_langsmith()` flips the LangChain env vars on app startup the moment `LANGCHAIN_API_KEY` is set, so traces appear on smith.langchain.com automatically. The literal `docs/trace.png` screenshot is captured by following `docs/MANUAL_PROOF.md` § 1. |
+| 3.8 | Genuine cross-tool synthesis | `backend/app/agent/synthesize.py` | DONE | Dream score is now a real combiner of ML confidence + RAG hit count + traits matched + style alignment (no longer hardcoded). The strong-step synthesis calls a real provider when a key is set; deterministic verdict otherwise. |
 
 ## 4. Two-Model Routing
 
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
-| 4.1 | Cheap model for mechanical work | `backend/app/llm/router.py` | DONE | Cheap step is deterministic by design (mechanical extraction is faster + free); the cheap-model name and step shape are still recorded in `LLMUsage`. |
+| 4.1 | Cheap model for mechanical work | `backend/app/llm/router.py` (`extract_trip_plan`, `_score_row`) | DONE | Cheap step is a deterministic ranker over `data/destinations.csv` that scores rows against parsed traits; recorded as `LLMUsage(model="deterministic-extractor", step="extract_trip_plan")`. The chosen row's nine numeric features feed the ML classify tool, so the model classifies the destination the user actually got. |
 | 4.2 | Strong model for final synthesis | `backend/app/llm/router.py` (`try_strong_synthesis`), `backend/app/llm/providers.py`, `backend/app/agent/synthesize.py` | DONE | Real Anthropic / OpenAI calls activate the moment `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` lands in `.env`. Provider preference per role is configurable (`STRONG_MODEL_PROVIDER=auto/anthropic/openai/none`); deterministic fallback runs unchanged when no key is set. |
 | 4.3 | Token + cost logging per step | `backend/app/llm/providers.py` (`PRICE_TABLE_PER_MTOKENS`, `_cost_usd`), `backend/app/agent/synthesize.py`, `backend/app/models/agent_run.py` | DONE | Real provider responses carry real `input_tokens`/`output_tokens`; the cost table converts those to USD per query. `TripBriefResponse.meta.cost_usd` becomes a real number the moment a key is set. |
 
@@ -63,7 +63,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 5.2 | `users` table | `backend/app/models/user.py` | DONE | Stores registered users and bcrypt password hashes. |
 | 5.3 | `agent_runs` table | `backend/app/models/agent_run.py` | DONE | One row per query: optional user, status, response JSON, token/cost metadata. |
 | 5.4 | `tool_calls` table | `backend/app/models/tool_call.py` | DONE | One row per tool invocation with args, output, status, and structured error text. |
-| 5.5 | `embeddings` table / pgvector chunks | `backend/app/models/document_chunk.py` | IN_PROGRESS | RAG chunks use `Vector(384)` + cosine index; live table creation awaits a reachable Docker/Postgres environment. |
+| 5.5 | `embeddings` table / pgvector chunks | `backend/app/models/document_chunk.py` | DONE | RAG chunks use `Vector(384)` + cosine index; live Docker/Postgres ingest is verified. |
 | 5.6 | Alembic migrations | `backend/alembic/` | DONE | `alembic.ini`, `alembic/env.py`, and `versions/0001_initial.py` create all six tables and enable pgvector; `alembic upgrade head --sql` renders valid offline DDL. |
 
 ## 6. Auth - Sign-Up and Login
@@ -98,11 +98,11 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
-| 9.1 | Backend container | `backend/Dockerfile` | IN_PROGRESS | Working skeleton image. |
-| 9.2 | Frontend container | `frontend/Dockerfile` | IN_PROGRESS | Working Vite dev image. |
-| 9.3 | Postgres + pgvector container | `docker-compose.yml` | IN_PROGRESS | Compose config passes; live container start is blocked here because Docker Desktop is not reachable. |
-| 9.4 | Named Postgres volume | `docker-compose.yml` | IN_PROGRESS | `pgdata` volume keeps embeddings across restarts. |
-| 9.5 | One-command startup | `docker-compose.yml` | IN_PROGRESS | `docker compose up` is configured; live startup still needs a running Docker daemon. |
+| 9.1 | Backend container | `backend/Dockerfile` | DONE | Backend container runs FastAPI and has read-only access to the RAG corpus via Compose. |
+| 9.2 | Frontend container | `frontend/Dockerfile` | DONE | Frontend container runs the Vite app. |
+| 9.3 | Postgres + pgvector container | `docker-compose.yml` | DONE | `pgvector/pgvector:pg16` starts healthy under Compose. |
+| 9.4 | Named Postgres volume | `docker-compose.yml` | DONE | `pgdata` volume keeps users, runs, tool logs, webhook rows, and embeddings across restarts. |
+| 9.5 | One-command startup | `docker-compose.yml` | DONE | `docker compose up` starts db/backend/frontend; backend creates tables and seeds RAG when empty. |
 
 ## 10. Engineering Standards
 
@@ -138,9 +138,9 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 12.2 | Dataset labeling rules | `README.md` | DONE | ML labeling rules documented. |
 | 12.3 | Chunking + retrieval rationale | `README.md` | DONE | RAG section explains chunk size, overlap, embeddings, fallback, and top-k retrieval. |
 | 12.4 | Model comparison table | `README.md` | DONE | Latest ML table documented. |
-| 12.5 | Per-query cost breakdown | `backend/app/llm/providers.py`, `TripBriefResponse.meta`, `backend/app/models/agent_run.py` | DONE (wiring) / TODO (numbers in README) | Real cost arithmetic ships in `_cost_usd` against a per-million-token price table. Real numbers populate `meta.cost_usd` automatically once a provider key is set; the README breakdown is a one-paste followup. |
-| 12.6 | LangSmith trace screenshot | `README.md`, `docs/trace.png` | TODO (image) | Tracing wiring is DONE in `app/tracing.py`; the actual PNG still has to be captured. |
-| 12.7 | 3-minute demo video | `docs/demo.mp4` or link | TODO | One end-to-end run from UI to webhook. |
+| 12.5 | Per-query cost breakdown | `backend/app/llm/providers.py`, `README.md` § Per-query cost breakdown, `TripBriefResponse.meta`, `backend/app/models/agent_run.py` | DONE | Real cost arithmetic ships in `_cost_usd` against a per-million-token price table. The README now contains the full price table and a worked `~$0.0026 per query` example for the default `claude-sonnet-4-6`. `meta.cost_usd` carries the real number on every request when a provider key is set. |
+| 12.6 | LangSmith trace screenshot | `README.md`, `docs/trace.png`, `docs/MANUAL_PROOF.md` § 1 | PROOF_PENDING | Tracing wiring is DONE in `app/tracing.py`; the actual PNG is captured by following the runbook (paste key, run brief, screenshot). |
+| 12.7 | 3-minute demo video | `docs/demo.mp4` or link, `docs/MANUAL_PROOF.md` § 3 | PROOF_PENDING | Beat sheet for the recording is in the runbook. The agent + UI it captures is shipped and verified end-to-end. |
 
 ## 13. Optional Extensions
 

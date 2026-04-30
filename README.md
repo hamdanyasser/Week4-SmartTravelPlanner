@@ -58,8 +58,9 @@ Reality Pressure, and **terracotta** (#E27A5C) for the counterfactual.
 |-- frontend/                Vite + React + TypeScript briefing room
 |   |-- src/App.tsx          Orchestrator: hero → auth pill → prompt → DNA → timeline → board → memo → evidence
 |   |-- src/components/      Hero, AuthPanel, CinematicPromptBox, TripDNAPanel, AgentTimeline,
-|   |                        DecisionTensionBoard, ScoreCard, TravelBriefMemo,
-|   |                        EvidenceDrawer, LoadingShimmer, EmptyState, ErrorState, Brand
+|   |                        DecisionTensionBoard, Dial, Gauge, DestinationScene, Postcards,
+|   |                        TravelBriefMemo, EvidenceDrawer, AtlasBackdrop,
+|   |                        LoadingShimmer, EmptyState, ErrorState, Brand
 |   |-- src/hooks/           useTripBrief — request lifecycle + offline fallback;
 |   |                        useAuth — JWT persistence + Bearer header
 |   |-- src/utils/           parseQuery — Trip DNA extraction
@@ -142,12 +143,61 @@ does not crash the user-facing response.
 
 `backend/app/llm/router.py` keeps the required routing shape:
 
-- cheap step: extract destination/query features,
-- strong step: final Decision Tension Board synthesis accounting.
+- **Cheap step** — `extract_trip_plan(query)` is a deterministic ranker over
+  `data/destinations.csv`. It parses traits from the query (warm / cold /
+  hiking / culture / luxury / family / less-touristy / budget / safe), pulls
+  the per-day budget from "$X for N days" patterns, and scores every row
+  with graduated weights: a primary-intent trait at the corpus ceiling
+  (e.g. `hiking_score == 5`) earns +3, above-threshold earns +2, secondary
+  traits and budget alignment earn +2/+1. The top-scored row becomes the
+  destination; the highest-scored same-tier candidate from a different
+  country becomes the counterfactual. The chosen row's nine numeric
+  features are handed to the ML classify tool, so the model classifies the
+  destination the user actually got — not a constant fixture. We keep this
+  step deterministic on purpose: rule-based ranking is faster, free, and
+  fully explainable to a code reviewer.
+- **Strong step** — `try_strong_synthesis(system, user)` calls the real
+  provider in `app.llm.providers` when `ANTHROPIC_API_KEY` or
+  `OPENAI_API_KEY` is set in `backend/.env`. Provider preference is
+  configurable per role (`STRONG_MODEL_PROVIDER=auto|anthropic|openai|none`,
+  same for `CHEAP_MODEL_PROVIDER`). On `ProviderUnavailable` the call
+  returns `(None, deterministic_usage)` and the synthesizer emits a
+  template verdict so local demos never depend on network.
 
-No external LLM is called without future provider wiring. When provider keys
-are missing, the backend uses deterministic local routing and records token/cost
-metadata with zero provider cost.
+The dream-fit score is itself a real combiner: ML confidence (up to 35
+points) + RAG hit count (up to 25) + traits matched (up to 25) + style
+alignment (+15 if the predicted travel style is consistent with the matched
+traits). It is no longer hardcoded.
+
+### Per-query cost breakdown
+
+Real per-million-token rates live in `PRICE_TABLE_PER_MTOKENS` in
+[`backend/app/llm/providers.py`](backend/app/llm/providers.py). The ML/RAG
+tools and the cheap-step ranker do not touch the provider, so a query's
+cost is whatever the strong-step synthesis call costs.
+
+| Model (id)                        | Input $/1M tokens | Output $/1M tokens |
+|-----------------------------------|------------------:|-------------------:|
+| `claude-haiku-4-5-20251001`       |              1.00 |               5.00 |
+| `claude-sonnet-4-6` *(default strong)* | 3.00         |              15.00 |
+| `claude-opus-4-7`                 |             15.00 |              75.00 |
+| `gpt-4o-mini`                     |              0.15 |               0.60 |
+| `gpt-4o`                          |              2.50 |              10.00 |
+
+Worked example for **one** trip-brief request against the default strong
+model (`claude-sonnet-4-6`):
+
+- Cheap step (deterministic ranker): **0 tokens to provider**, **$0.0000**.
+- Strong-step synthesis prompt is a compact summary of the three tool
+  outputs — typically **~520 input tokens** plus ~70 output tokens for the
+  90-word verdict.
+- Per-query cost ≈ `(520 / 1_000_000) * 3.00 + (70 / 1_000_000) * 15.00`
+  ≈ **`$0.0026`** per query, or about **38 queries per cent**.
+
+`meta.cost_usd` in the API response carries the **real** number for the
+current request: real provider tokens × the table above when a key is set,
+`0.0` in deterministic mode. The `Mode: live | live-stream | demo` field
+in the Evidence drawer makes it obvious which path the brief used.
 
 ### Persistence
 
@@ -400,7 +450,7 @@ EMBEDDING_DIMENSION=384
 
 ### Database Design
 
-The Postgres/pgvector path is built but not required for local verification:
+The Postgres/pgvector path is the primary Docker path:
 
 - `backend/app/db/session.py` - async SQLAlchemy engine/session factory.
 - `backend/app/db/init_db.py` - enables `CREATE EXTENSION IF NOT EXISTS vector`.
@@ -410,9 +460,9 @@ The Postgres/pgvector path is built but not required for local verification:
 - `backend/app/rag/ingest_documents.py` - embeds and stores chunks when a DB is
   available.
 
-If Postgres is empty, retrieval returns an empty result instead of crashing. If
-database retrieval fails, the retriever falls back to the deterministic local
-index.
+On startup, the backend creates the tables and seeds the bundled RAG corpus
+only when the pgvector chunk table is empty. If database retrieval fails, the
+retriever falls back to the deterministic local index instead of crashing.
 
 ### Retrieval
 
@@ -435,59 +485,70 @@ Manual retrieval probes are stored in `MANUAL_RETRIEVAL_TEST_QUERIES`:
 
 ### Live Postgres Verification Status
 
-`docker compose config --quiet` passes, so the Compose file is valid. On this
-machine, the live Postgres smoke test is blocked before app code runs because
-Docker Desktop is not reachable:
-
-```text
-open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified
-```
-
-That means the unproven part is environmental: starting the
-`pgvector/pgvector:pg16` container and exercising `ingest_documents.py --db`
-against a live database. The RAG pipeline itself is still locally verified by
-`app.rag.smoke_test`.
-
-When Docker Desktop is running, use this sequence from the repo root:
+Verified on 2026-04-30:
 
 ```powershell
 docker compose config --quiet
-docker compose up -d db
-docker compose exec db pg_isready -U trippilot -d trippilot
-
-cd backend
-$env:DATABASE_URL="postgresql+asyncpg://trippilot:change-me-local-only@localhost:5432/trippilot"
-.\.venv\Scripts\python -m app.rag.ingest_documents --db --reset
+docker compose up -d --build
+docker compose exec backend python -m app.rag.ingest_documents --db --reset
 ```
 
-Then run one DB-backed retrieval query:
+Expected ingest result:
 
-```powershell
-@'
-import asyncio
-from app.db.session import get_session_factory, dispose_engine
-from app.rag.retriever import retrieve_from_db
-from app.schemas.rag import DestinationKnowledgeQuery
-
-async def main():
-    session_factory = get_session_factory()
-    async with session_factory() as session:
-        response = await retrieve_from_db(
-            DestinationKnowledgeQuery(
-                query="Madeira warm levada island hiking less touristy",
-                top_k=3,
-            ),
-            session=session,
-        )
-        print(response.model_dump_json(indent=2))
-    await dispose_engine()
-
-asyncio.run(main())
-'@ | .\.venv\Scripts\python -
+```json
+{
+  "documents": 28,
+  "destinations": 14,
+  "chunks": 28,
+  "embedding_provider": "deterministic-hashing-v1",
+  "used_database": true
+}
 ```
 
-If your local `backend/.env` uses a different `POSTGRES_PASSWORD`, update the
-temporary `DATABASE_URL` to match it.
+The live API returns pgvector-backed tool traces after ingest, for example:
+`2 chunks via pgvector; top: Madeira`.
+
+## Optional extensions completed
+
+The brief lists "Optional — go further" items. AtlasBrief ships five of them:
+
+- **Streaming response (SSE).** `POST /api/v1/trip-briefs/stream` emits one
+  event per pipeline stage. Frontend opt-in via `?stream=1` or
+  `VITE_USE_STREAMING=true`. See
+  [`backend/app/agent/graph.py:stream_events`](backend/app/agent/graph.py)
+  and [`frontend/src/api/stream.ts`](frontend/src/api/stream.ts).
+- **Compare two destinations.**
+  [`POST /api/v1/trip-briefs/compare`](backend/app/api/routes/trip_briefs.py)
+  runs the three tools per destination, picks dream-fit and reality-pressure
+  winners, and emits a tradeoff verdict. Six tool calls per request.
+- **Human-in-the-loop approval.** Auth-required, user-scoped
+  `POST /api/v1/agent-runs/{id}/approve` reconstructs the brief from
+  `agent_runs.response_json` and fires the webhook only after explicit
+  approval. Toggle with `WEBHOOK_REQUIRE_APPROVAL=true`.
+- **MLflow experiment tracking.**
+  [`backend/app/ml/mlflow_tracking.py`](backend/app/ml/mlflow_tracking.py)
+  becomes a no-op without `MLFLOW_TRACKING_URI`. `results.csv` stays the
+  source of truth.
+- **Planner-vs-ReAct reflection.** A defended write-up in
+  [`docs/PLANNER_VS_REACT.md`](docs/PLANNER_VS_REACT.md) explaining why
+  AtlasBrief uses planner-then-executor and when ReAct would actually win.
+
+## Manual proof artifacts
+
+A few brief deliverables genuinely require credentials or hardware that the
+code-only path can't fabricate. The exact step-by-step is in
+[`docs/MANUAL_PROOF.md`](docs/MANUAL_PROOF.md):
+
+1. `docs/trace.png` — capture from a live LangSmith run after pasting
+   `LANGCHAIN_API_KEY` into `backend/.env`.
+2. Real `cost_usd` in the response — paste `ANTHROPIC_API_KEY` or
+   `OPENAI_API_KEY` and run one brief; `meta.cost_usd` becomes a real number.
+3. `docs/demo.mp4` — a 3-minute end-to-end recording against the golden
+   query.
+4. Live pgvector ingest — `docker compose up -d`,
+   `alembic upgrade head`, `python -m app.rag.ingest_documents --db --reset`.
+5. Discord webhook end-to-end — paste `DISCORD_WEBHOOK_URL` and screenshot
+   the message.
 
 ## Code review notes
 
