@@ -1,5 +1,6 @@
-// Inline error pill — used when the backend returned a real error
-// (not just an unreachable endpoint, which falls through to demo mode).
+// Calm error thread — terracotta hairline, never an alarm. Used when the
+// backend returns a real error (an unreachable endpoint falls through to
+// demo mode and shows the demo banner instead).
 
 interface ErrorStateProps {
   message: string;
@@ -7,14 +8,9 @@ interface ErrorStateProps {
 
 export function ErrorState({ message }: ErrorStateProps) {
   return (
-    <div className="error-state reveal" role="alert">
-      <span className="error-state__icon" aria-hidden>
-        !
-      </span>
-      <div>
-        <div className="error-state__title">Briefing failed</div>
-        <p className="error-state__body">{message}</p>
-      </div>
+    <div className="thread error reveal reveal--d2" role="alert">
+      <span className="thread__dot" aria-hidden />
+      <span>Briefing failed · {message}</span>
     </div>
   );
 }

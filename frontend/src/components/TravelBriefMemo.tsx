@@ -1,10 +1,8 @@
-// Executive memo card.
+// Executive Trip Memo — a letterpress vellum card with a slight rotation,
+// compass watermark, and six sections (Why it fits / What to expect /
+// Risks & tradeoffs / Booking advice / Backup option / Budget fit).
 //
-// Synthesizes the agent's response into a "premium travel memo" aesthetic
-// — the way a private travel concierge would write up a recommendation.
-// We pull from the response's verdict + dream-fit rationale + reality
-// signals + the runner-up so this section feels load-bearing instead of
-// being a duplicate of the Tension Board.
+// Every line of body copy is reframed from the real schema; we don't invent.
 
 import type { TripBriefResponse } from "../api/types";
 import { formatBudget, parseTripDNA } from "../utils/parseQuery";
@@ -13,100 +11,142 @@ interface TravelBriefMemoProps {
   brief: TripBriefResponse;
 }
 
+function fileTag(name: string, country: string): string {
+  const slug = (name + country)
+    .replace(/[^A-Za-z0-9]/g, "")
+    .slice(0, 3)
+    .toUpperCase()
+    .padEnd(3, "X");
+  return `AB-${new Date().getFullYear()}-${slug}`;
+}
+
 export function TravelBriefMemo({ brief }: TravelBriefMemoProps) {
+  const top = brief.top_pick;
   const dna = parseTripDNA(brief.query);
   const runner = brief.runners_up[0];
+  const stamp = new Date()
+    .toLocaleDateString("en-US", { year: "numeric", month: "short", day: "2-digit" })
+    .toUpperCase();
 
-  // Pull a couple of "what to expect" lines from the dream-fit rationale and
-  // reality signals. We don't invent content — we re-frame what the backend
-  // already returned, which keeps this honest at code-review time.
-  const expectLines: string[] = [];
-  if (brief.top_pick.dream_fit.rationale) {
-    expectLines.push(brief.top_pick.dream_fit.rationale);
-  }
-  expectLines.push(brief.top_pick.reality_pressure.weather_signal);
-  expectLines.push(brief.top_pick.reality_pressure.flight_signal);
-
-  const stamp = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-  });
+  const recipient =
+    dna.durationLabel || dna.month || dna.budgetUsd !== null
+      ? [
+          dna.durationLabel,
+          dna.month && `in ${dna.month}`,
+          dna.budgetUsd !== null && `${formatBudget(dna.budgetUsd)} budget`,
+        ]
+          .filter(Boolean)
+          .join(", ")
+      : "the requested trip";
 
   return (
-    <section className="memo reveal reveal--d2" aria-label="Travel brief memo">
-      <header className="memo__head">
-        <div className="memo__head-left">
-          <div className="memo__eyebrow">Executive trip memo · Confidential</div>
-          <h3 className="memo__title">
-            Recommendation: {brief.top_pick.name}, {brief.top_pick.country}
-          </h3>
-          <div className="memo__sub">
-            Drafted for {dna.durationLabel ?? "the requested trip"}
-            {dna.month ? ` in ${dna.month}` : ""} ·{" "}
-            {formatBudget(dna.budgetUsd)} budget
+    <section className="memo-wrap reveal reveal--d5" aria-label="Executive trip memo">
+      <div className="section__rail">
+        <span className="num">06</span>
+        <span className="div" aria-hidden />
+        <span className="tag">Executive memo · for the briefcase</span>
+      </div>
+
+      <article className="memo">
+        <div className="memo__head">
+          <div>
+            <div className="memo__title">
+              <strong>EXECUTIVE TRIP MEMO</strong> · CONFIDENTIAL
+            </div>
+            <div className="memo__recipient">
+              Drafted for {recipient}.
+            </div>
+          </div>
+          <div className="memo__stamp">
+            <div>FILE · {fileTag(top.name, top.country)}</div>
+            <div>{stamp}</div>
+            <div className="seal">◆ {top.travel_style.toUpperCase()}</div>
           </div>
         </div>
-        <div className="memo__stamp">
-          Stamp · {stamp}
-          <br />
-          Style · {brief.top_pick.travel_style}
-        </div>
-      </header>
 
-      <div className="memo__grid">
-        <div className="memo__section">
-          <h4>Why it fits</h4>
-          <p>{brief.top_pick.dream_fit.rationale}</p>
-        </div>
+        <div className="memo__grid">
+          <div className="memo-section">
+            <h5>Why it fits</h5>
+            <p>{top.dream_fit.rationale}</p>
+          </div>
 
-        <div className="memo__section">
-          <h4>What to expect</h4>
-          <ul className="memo__list">
-            {expectLines.filter(Boolean).map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="memo__section">
-          <h4>Risks &amp; tradeoffs</h4>
-          <p>{brief.top_pick.reality_pressure.rationale}</p>
-        </div>
-
-        <div className="memo__section">
-          <h4>Booking advice</h4>
-          <p>{brief.top_pick.reality_pressure.flight_signal}</p>
-        </div>
-
-        {runner && (
-          <div className="memo__section memo__section--wide">
-            <h4>Backup option</h4>
+          <div className="memo-section">
+            <h5>What to expect</h5>
             <p>
-              <strong>
-                {runner.name}, {runner.country}
-              </strong>{" "}
-              ({runner.travel_style}, Dream Fit{" "}
-              {Math.round(runner.dream_fit.score)}, Reality{" "}
-              {Math.round(runner.reality_pressure.score)}) —{" "}
-              {runner.dream_fit.rationale}
+              {top.reality_pressure.weather_signal}{" "}
+              {top.dream_fit.matched_traits.length > 0 && (
+                <em>
+                  Trip leans into:{" "}
+                  {top.dream_fit.matched_traits.join(", ")}.
+                </em>
+              )}
             </p>
           </div>
-        )}
 
-        <div className="memo__section memo__section--wide">
-          <h4>Budget fit</h4>
-          <p>
-            {dna.budgetUsd !== null
-              ? `Stated budget: ${formatBudget(dna.budgetUsd)}. The Reality Pressure score of ${Math.round(
-                  brief.top_pick.reality_pressure.score,
-                )} reflects how forgiving the live conditions are against this budget.`
-              : `No explicit budget was given, so the agent treated affordability as a soft constraint and weighted Dream Fit (${Math.round(
-                  brief.top_pick.dream_fit.score,
-                )}) more heavily.`}
-          </p>
+          <div className="memo-section">
+            <h5>Risks &amp; tradeoffs</h5>
+            <p>{top.reality_pressure.rationale}</p>
+          </div>
+
+          <div className="memo-section">
+            <h5>Booking advice</h5>
+            <p>{top.reality_pressure.flight_signal}</p>
+          </div>
+
+          <div className="memo-section">
+            <h5>Backup option</h5>
+            {runner ? (
+              <p>
+                <strong>
+                  {runner.name}, {runner.country}
+                </strong>{" "}
+                ({runner.travel_style}, Dream Fit{" "}
+                {Math.round(runner.dream_fit.score)}, Reality{" "}
+                {Math.round(runner.reality_pressure.score)}) —{" "}
+                {runner.dream_fit.rationale}
+              </p>
+            ) : (
+              <p>
+                <em>
+                  No second-place destination cleared the bar this run; the
+                  agent is confident in {top.name}.
+                </em>
+              </p>
+            )}
+          </div>
+
+          <div className="memo-section">
+            <h5>Budget fit</h5>
+            <p>
+              {dna.budgetUsd !== null ? (
+                <>
+                  Stated budget: <strong>{formatBudget(dna.budgetUsd)}</strong>.
+                  The Reality Pressure score of{" "}
+                  {Math.round(top.reality_pressure.score)} reflects how
+                  forgiving live conditions are against this budget.
+                </>
+              ) : (
+                <em>
+                  No explicit budget was given, so the agent treated
+                  affordability as a soft constraint and weighted Dream Fit
+                  ({Math.round(top.dream_fit.score)}) more heavily.
+                </em>
+              )}
+            </p>
+          </div>
         </div>
-      </div>
+
+        <div className="memo__signature">
+          <div className="sig">— AtlasBrief</div>
+          <div className="meta">
+            <div>Synthesis · {brief.meta.strong_model}</div>
+            <div>
+              Run latency · {(brief.meta.latency_ms / 1000).toFixed(2)}s
+            </div>
+            <div>Cost · ${brief.meta.cost_usd.toFixed(4)}</div>
+          </div>
+        </div>
+      </article>
     </section>
   );
 }

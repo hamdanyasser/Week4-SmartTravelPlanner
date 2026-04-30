@@ -1,11 +1,8 @@
-// AuthPanel — minimal sign-in surface tucked above the prompt console.
-//
-// AtlasBrief works anonymously by design (the trip-brief route accepts
-// anonymous users for the demo), so this panel is small and collapsible.
-// When signed in, the JWT is attached to subsequent /api/v1/trip-briefs
-// requests so each run is associated with a user in Postgres.
+// AuthPanel — a glass capsule in the topbar that slides down a glass shelf
+// when the user wants to sign in or register. Anonymous use is supported by
+// the backend, so this stays out of the user's way until they ask.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AuthState } from "../hooks/useAuth";
 
 interface AuthPanelProps {
@@ -20,6 +17,16 @@ export function AuthPanel({ auth }: AuthPanelProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Escape closes the open form so the keyboard user can dismiss it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -37,34 +44,35 @@ export function AuthPanel({ auth }: AuthPanelProps) {
       setPassword("");
       setOpen(false);
     } catch {
-      // useAuth already populated auth.error.
+      // useAuth populated auth.error.
     }
   };
 
   if (auth.token) {
     return (
-      <section className="auth-pill" aria-label="Signed in">
-        <span className="auth-pill__dot" aria-hidden />
-        Signed in as <strong>{auth.email ?? "user"}</strong>
-        <button
-          type="button"
-          className="auth-pill__sign-out"
-          onClick={auth.signOut}
-        >
+      <div className="auth-pill" aria-label="Signed in">
+        <span className="auth-pill__label">
+          <span className="auth-pill__dot" aria-hidden />
+          <span>
+            Signed in · <strong>{auth.email ?? "user"}</strong>
+          </span>
+        </span>
+        <button type="button" onClick={auth.signOut}>
           Sign out
         </button>
-      </section>
+      </div>
     );
   }
 
   if (!open) {
     return (
-      <section className="auth-pill" aria-label="Sign in">
-        <span className="auth-pill__dot auth-pill__dot--anon" aria-hidden />
-        Browsing anonymously
+      <div className="auth-pill" aria-label="Authentication">
+        <span className="auth-pill__label">
+          <span className="auth-pill__dot auth-pill__dot--anon" aria-hidden />
+          <span>Anonymous</span>
+        </span>
         <button
           type="button"
-          className="auth-pill__sign-out"
           onClick={() => {
             setMode("login");
             setOpen(true);
@@ -74,7 +82,6 @@ export function AuthPanel({ auth }: AuthPanelProps) {
         </button>
         <button
           type="button"
-          className="auth-pill__sign-out"
           onClick={() => {
             setMode("register");
             setOpen(true);
@@ -82,7 +89,7 @@ export function AuthPanel({ auth }: AuthPanelProps) {
         >
           Register
         </button>
-      </section>
+      </div>
     );
   }
 
@@ -90,7 +97,7 @@ export function AuthPanel({ auth }: AuthPanelProps) {
     <section className="auth-form" aria-label="AtlasBrief credentials">
       <header className="auth-form__head">
         <span className="auth-form__eyebrow">
-          {mode === "login" ? "SIGN IN" : "CREATE ACCOUNT"}
+          {mode === "login" ? "Sign in" : "Create account"}
         </span>
         <button
           type="button"
@@ -121,9 +128,7 @@ export function AuthPanel({ auth }: AuthPanelProps) {
             className="auth-form__input"
             type="password"
             value={password}
-            autoComplete={
-              mode === "login" ? "current-password" : "new-password"
-            }
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
@@ -152,9 +157,7 @@ export function AuthPanel({ auth }: AuthPanelProps) {
             className="auth-form__switch"
             onClick={() => setMode(mode === "login" ? "register" : "login")}
           >
-            {mode === "login"
-              ? "Need an account? Register"
-              : "Have an account? Sign in"}
+            {mode === "login" ? "Need an account?" : "Have an account?"}
           </button>
         </div>
       </form>

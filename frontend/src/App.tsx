@@ -1,11 +1,18 @@
 // AtlasBrief — single-page briefing room.
 //
-// This file deliberately reads top-to-bottom as the user's experience:
-// hero → auth pill → prompt → trip DNA → mission timeline → tension board →
-// memo → evidence. Every section is a small dedicated component.
+// Reads top-to-bottom as the user's experience:
+//   atlas backdrop (fixed) → topbar (brand · status · auth) → hero →
+//   intake console → trip DNA → mission timeline → tension board →
+//   postcards strip → executive memo → footer · evidence drawer.
+//
+// The atmosphere layer (AtlasBackdrop) is fixed behind everything; cursor
+// position is tracked here and pushed in as CSS variables so it stays a
+// single source of truth.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { AtlasBackdrop } from "./components/AtlasBackdrop";
 import { AuthPanel } from "./components/AuthPanel";
+import { Brand } from "./components/Brand";
 import { CinematicPromptBox } from "./components/CinematicPromptBox";
 import { DecisionTensionBoard } from "./components/DecisionTensionBoard";
 import { EmptyState } from "./components/EmptyState";
@@ -13,6 +20,7 @@ import { ErrorState } from "./components/ErrorState";
 import { EvidenceDrawer } from "./components/EvidenceDrawer";
 import { Hero } from "./components/Hero";
 import { LoadingShimmer } from "./components/LoadingShimmer";
+import { Postcards } from "./components/Postcards";
 import { TIMELINE_STAGES, AgentTimeline } from "./components/AgentTimeline";
 import { TravelBriefMemo } from "./components/TravelBriefMemo";
 import { TripDNAPanel } from "./components/TripDNAPanel";
@@ -26,69 +34,126 @@ export default function App() {
   const [query, setQuery] = useState(GOLDEN_DEMO_QUERY);
   const trip = useTripBrief(TIMELINE_STAGES.length);
   const auth = useAuth();
+  const [parallax, setParallax] = useState({ x: 0, y: 0 });
+
+  // Mouse parallax for the celestial atlas. Bypassed by reduced-motion users.
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    const onMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * -24;
+      const y = (e.clientY / window.innerHeight - 0.5) * -16;
+      setParallax({ x, y });
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
 
   const showEmpty = !trip.brief && !trip.loading && !trip.error;
   const showShimmer = trip.loading && !trip.brief;
+  const isThinking = trip.loading;
+
+  const statusLabel =
+    trip.mode === "demo"
+      ? "Offline demo mode"
+      : trip.mode === "live" || trip.mode === "live-stream"
+      ? "Live agent online"
+      : trip.loading
+      ? "Drafting briefing"
+      : trip.error
+      ? "Tool failure · recovering"
+      : "Standing by";
+
+  const statusClass =
+    trip.mode === "demo"
+      ? "status-pill demo"
+      : trip.error
+      ? "status-pill error"
+      : !trip.brief && !trip.loading
+      ? "status-pill idle"
+      : "status-pill";
 
   return (
-    <div className="app-shell">
-      <Hero mode={trip.mode} />
+    <>
+      <AtlasBackdrop parallax={parallax} thinking={isThinking} />
 
-      <AuthPanel auth={auth} />
+      <div className="app-shell">
+        <header className="topbar">
+          <Brand />
+          <div className="topbar__right">
+            <div className={statusClass}>
+              <span className="dot" aria-hidden />
+              <span>{statusLabel}</span>
+            </div>
+            <AuthPanel auth={auth} />
+          </div>
+        </header>
 
-      <CinematicPromptBox
-        query={query}
-        onChange={setQuery}
-        onSubmit={() => trip.submit(query, auth.authHeader())}
-        loading={trip.loading}
-      />
+        <Hero mode={trip.mode} />
 
-      <TripDNAPanel
-        query={query}
-        travelStyle={trip.brief?.top_pick.travel_style ?? null}
-      />
+        <CinematicPromptBox
+          query={query}
+          onChange={setQuery}
+          onSubmit={() => trip.submit(query, auth.authHeader())}
+          loading={trip.loading}
+        />
 
-      {trip.error && <ErrorState message={trip.error} />}
+        <TripDNAPanel
+          query={query}
+          travelStyle={trip.brief?.top_pick.travel_style ?? null}
+        />
 
-      <AgentTimeline
-        activeStage={trip.activeStage}
-        loading={trip.loading}
-        tools={trip.brief?.tools_used}
-        startedAt={trip.startedAt}
-        finishedAt={trip.finishedAt}
-      />
+        {trip.error && <ErrorState message={trip.error} />}
 
-      {showEmpty && <EmptyState />}
-      {showShimmer && <LoadingShimmer />}
+        {trip.mode === "demo" && (
+          <div className="thread demo reveal reveal--d2">
+            <span className="thread__dot" aria-hidden />
+            <span>Backend unreachable · showing offline demo briefing</span>
+          </div>
+        )}
+
+        <AgentTimeline
+          activeStage={trip.activeStage}
+          loading={trip.loading}
+          tools={trip.brief?.tools_used}
+          startedAt={trip.startedAt}
+          finishedAt={trip.finishedAt}
+        />
+
+        {showEmpty && <EmptyState />}
+        {showShimmer && <LoadingShimmer />}
+
+        {trip.brief && (
+          <>
+            <DecisionTensionBoard
+              topPick={trip.brief.top_pick}
+              finalVerdict={trip.brief.final_verdict}
+              counterfactual={trip.brief.counterfactual}
+            />
+            <Postcards brief={trip.brief} />
+            <TravelBriefMemo brief={trip.brief} />
+          </>
+        )}
+
+        <footer className="footer">
+          <span>AtlasBrief · Private travel briefing room</span>
+          <span>Built for SE Factory · Week 4 deliverable</span>
+        </footer>
+      </div>
 
       {trip.brief && (
-        <>
-          {trip.mode === "demo" && (
-            <div className="demo-banner reveal">
-              <span className="demo-banner__dot" aria-hidden />
-              Backend unreachable · showing offline demo briefing
-            </div>
-          )}
-          <DecisionTensionBoard
-            topPick={trip.brief.top_pick}
-            finalVerdict={trip.brief.final_verdict}
-            counterfactual={trip.brief.counterfactual}
-          />
-          <TravelBriefMemo brief={trip.brief} />
-          <EvidenceDrawer
-            tools={trip.brief.tools_used}
-            meta={trip.brief.meta}
-            mode={trip.mode}
-            startedAt={trip.startedAt}
-            finishedAt={trip.finishedAt}
-          />
-        </>
+        <EvidenceDrawer
+          tools={trip.brief.tools_used}
+          meta={trip.brief.meta}
+          mode={trip.mode}
+          startedAt={trip.startedAt}
+          finishedAt={trip.finishedAt}
+        />
       )}
-
-      <footer className="footer">
-        <span>AtlasBrief · AI travel briefing room</span>
-        <span>Built for SE Factory · Week 4 deliverable</span>
-      </footer>
-    </div>
+    </>
   );
 }

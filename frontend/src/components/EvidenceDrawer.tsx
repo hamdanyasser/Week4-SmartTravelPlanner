@@ -1,16 +1,9 @@
-// The Evidence drawer — for technical / code-review credibility.
-//
-// Two columns:
-//   left:  the actual tool trace returned by the agent (RAG retrieval
-//          summary, ML classification, live conditions).
-//   right: the cost / latency / model accounting from `meta`, plus a
-//          webhook delivery indicator.
-//
-// Collapsed by default so it doesn't compete with the briefing's
-// editorial sections, but opens to one click for a reviewer.
+// Evidence drawer — a fixed mission-control rail at the bottom of the page.
+// Closed by default (just the handle pokes up); opens to a teletype tool
+// trace + run-meta grid. Mode LED shows live/demo/idle.
 
 import { useState } from "react";
-import type { TripBriefMeta, ToolTraceEntry } from "../api/types";
+import type { ToolTraceEntry, TripBriefMeta } from "../api/types";
 import type { BriefMode } from "../hooks/useTripBrief";
 
 interface EvidenceDrawerProps {
@@ -21,10 +14,17 @@ interface EvidenceDrawerProps {
   finishedAt: number | null;
 }
 
-function formatLatency(ms: number | null, latencyMeta: number): string {
-  if (ms !== null && ms > 0) return `${ms} ms`;
-  if (latencyMeta > 0) return `${latencyMeta} ms`;
-  return "—";
+function modeClass(mode: BriefMode | null): string {
+  if (mode === "demo") return "demo";
+  if (mode === "live" || mode === "live-stream") return "live";
+  return "idle";
+}
+
+function modeLabel(mode: BriefMode | null): string {
+  if (mode === "demo") return "Demo mode";
+  if (mode === "live-stream") return "Live · streaming";
+  if (mode === "live") return "Live agent";
+  return "Standing by";
 }
 
 export function EvidenceDrawer({
@@ -34,104 +34,103 @@ export function EvidenceDrawer({
   startedAt,
   finishedAt,
 }: EvidenceDrawerProps) {
-  const [open, setOpen] = useState(true);
-
-  const measuredLatency =
+  const [open, setOpen] = useState(false);
+  const measured =
     startedAt !== null && finishedAt !== null ? finishedAt - startedAt : null;
+  const latencyMs = measured ?? meta.latency_ms ?? 0;
+  const latencyLabel = latencyMs > 0 ? `${(latencyMs / 1000).toFixed(2)}` : "—";
 
   return (
-    <section className="evidence reveal reveal--d4" aria-label="Evidence">
+    <div
+      className={"evidence" + (open ? " open" : "")}
+      aria-label="Evidence drawer"
+    >
       <button
         type="button"
-        className="evidence__head"
-        aria-expanded={open}
+        className="evidence__handle"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
       >
-        <span className="evidence__head-left">
-          <span>◇</span>
-          Evidence drawer · tool traces, cost, delivery
+        <span className="left">
+          <span className="grip" aria-hidden />
+          <span>Evidence drawer · raw tool trace</span>
         </span>
-        <span className="evidence__chevron" aria-hidden>
-          ▸
+        <span className="led-row">
+          <span className={`led-mode ${modeClass(mode)}`}>
+            <span className="led-pill" aria-hidden />
+            <span>{modeLabel(mode)}</span>
+          </span>
+          <span style={{ color: "var(--graphite-2)" }}>
+            {open ? "▾ Close" : "▴ Open"}
+          </span>
         </span>
       </button>
 
       {open && (
         <div className="evidence__body">
-          <div className="evidence__panel">
-            <h4 className="evidence__panel-title">Tool trace</h4>
-            {tools.length === 0 ? (
-              <p
-                style={{
-                  margin: 0,
-                  color: "var(--text-500)",
-                  fontSize: 13,
-                }}
-              >
-                No tool calls recorded for this run.
-              </p>
-            ) : (
-              tools.map((t) => (
-                <div className="tool-row" key={t.tool}>
-                  <span className="tool-row__pin" aria-hidden />
-                  <div>
-                    <span className="tool-row__name">{t.tool}</span>
-                    <span className="tool-row__summary">{t.summary}</span>
-                  </div>
+          <div className="evidence__col">
+            <h6>Tools used · {tools.length} / 3 logged</h6>
+            <div className="teletype">
+              {tools.length === 0 ? (
+                <div className="tt-empty">
+                  No tool calls recorded for this run.
                 </div>
-              ))
-            )}
+              ) : (
+                tools.map((row) => (
+                  <div
+                    key={row.tool}
+                    className={"tt-row" + (mode === "demo" ? " demo" : "")}
+                  >
+                    <span className="led-mini" aria-hidden />
+                    <span className="tool">{row.tool}</span>
+                    <span className="summary">{row.summary}</span>
+                    <span className="latency" />
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
-          <div className="evidence__panel">
-            <h4 className="evidence__panel-title">Run accounting</h4>
-            <div className="metric-row">
-              <span className="metric-row__label">Mode</span>
-              <span className="metric-row__value metric-row__value--accent">
-                {mode === "demo"
-                  ? "Offline demo"
-                  : mode === "live"
-                  ? "Live agent"
-                  : "—"}
-              </span>
-            </div>
-            <div className="metric-row">
-              <span className="metric-row__label">Cheap model</span>
-              <span className="metric-row__value">{meta.cheap_model}</span>
-            </div>
-            <div className="metric-row">
-              <span className="metric-row__label">Strong model</span>
-              <span className="metric-row__value">{meta.strong_model}</span>
-            </div>
-            <div className="metric-row">
-              <span className="metric-row__label">Tokens in / out</span>
-              <span className="metric-row__value">
-                {meta.tokens_in} / {meta.tokens_out}
-              </span>
-            </div>
-            <div className="metric-row">
-              <span className="metric-row__label">Cost</span>
-              <span className="metric-row__value">
-                {meta.cost_usd === 0
-                  ? "$0.0000"
-                  : `$${meta.cost_usd.toFixed(4)}`}
-              </span>
-            </div>
-            <div className="metric-row">
-              <span className="metric-row__label">Latency</span>
-              <span className="metric-row__value">
-                {formatLatency(measuredLatency, meta.latency_ms)}
-              </span>
-            </div>
-            <div className="metric-row">
-              <span className="metric-row__label">Webhook</span>
-              <span className="metric-row__value">
-                {mode === "demo" ? "Skipped (demo)" : "Best-effort, isolated"}
-              </span>
+          <div className="evidence__col">
+            <h6>Run meta · cost &amp; latency</h6>
+            <div className="meta-grid">
+              <div className="meta-cell">
+                <div className="k">Tokens in</div>
+                <div className="v">{meta.tokens_in.toLocaleString()}</div>
+              </div>
+              <div className="meta-cell">
+                <div className="k">Tokens out</div>
+                <div className="v">{meta.tokens_out.toLocaleString()}</div>
+              </div>
+              <div className="meta-cell">
+                <div className="k">Cost</div>
+                <div className="v">
+                  ${meta.cost_usd.toFixed(4)} <em>USD</em>
+                </div>
+              </div>
+              <div className="meta-cell">
+                <div className="k">Latency</div>
+                <div className="v">
+                  {latencyLabel}
+                  <em>s</em>
+                </div>
+              </div>
+              <div className="meta-cell">
+                <div className="k">Cheap model</div>
+                <div className="v" style={{ fontSize: 13 }}>
+                  {meta.cheap_model}
+                </div>
+              </div>
+              <div className="meta-cell">
+                <div className="k">Strong model</div>
+                <div className="v" style={{ fontSize: 13 }}>
+                  {meta.strong_model}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }

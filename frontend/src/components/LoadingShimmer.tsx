@@ -1,56 +1,24 @@
-// Loading state shown next to the timeline while the agent is running.
-//
-// Uses the shared `.shimmer` class to draw skeleton placeholders for the
-// upcoming Decision Tension Board. The shapes match the real layout so the
-// transition feels like sliding from "in progress" to "complete" rather
-// than a hard page swap.
+// Shimmer state while the brief is being drafted. The Mission Timeline above
+// already carries most of the "in progress" weight, so this is just a few
+// quiet bars that hint at the shape of the Tension Board.
 
 export function LoadingShimmer() {
   return (
-    <section
-      className="reveal reveal--d4"
-      aria-label="Drafting brief"
-      aria-busy
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginBottom: 18,
-        }}
-      >
-        <span className="hero__status-dot" aria-hidden />
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
-            color: "var(--text-400)",
-          }}
-        >
-          Drafting Decision Tension Board…
-        </span>
-      </div>
-
+    <section className="shimmer reveal reveal--d4" aria-busy aria-label="Drafting briefing">
+      <div className="shimmer__row" style={{ width: "92%", height: 28 }} />
+      <div className="shimmer__row" />
+      <div className="shimmer__row" />
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 18,
-          marginBottom: 18,
+          marginTop: 24,
         }}
       >
-        <div className="shimmer" style={{ height: 280 }} />
-        <div className="shimmer" style={{ height: 280 }} />
+        <div className="shimmer__row" style={{ height: 220, borderRadius: 12 }} />
+        <div className="shimmer__row" style={{ height: 220, borderRadius: 12 }} />
       </div>
-
-      <div
-        className="shimmer"
-        style={{ height: 140, marginBottom: 18, borderRadius: 16 }}
-      />
-      <div className="shimmer" style={{ height: 100, borderRadius: 16 }} />
     </section>
   );
 }

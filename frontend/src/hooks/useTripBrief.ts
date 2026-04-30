@@ -108,7 +108,6 @@ export function useTripBrief(totalStages: number): BriefState {
       setMode(null);
       setActiveStage(0);
       setLoading(true);
-      const start = performance.now();
       setStartedAt(Date.now());
       setFinishedAt(null);
 
@@ -147,8 +146,10 @@ export function useTripBrief(totalStages: number): BriefState {
         }
       } finally {
         setLoading(false);
-        const elapsed = Math.round(performance.now() - start);
-        setFinishedAt(Date.now() + elapsed - elapsed);
+        // `start` is performance.now() — a high-resolution monotonic stamp.
+        // We display latency in the Evidence drawer as Math.round(perf.now() - start),
+        // and `finishedAt` is a wall-clock stamp for "completed at" UI strings.
+        setFinishedAt(Date.now());
       }
     },
     [totalStages, runStreaming],

@@ -1,10 +1,6 @@
-// The prompt input — modeled less as a form, more as a console.
-//
-// Glass panel with an "INTAKE" header strip, a serif text area for the
-// query, smart example chips that prefill the textarea, and a single
-// premium CTA. The chips are intentionally written as scenarios, not
-// keywords, so a reviewer immediately understands what kinds of questions
-// the agent answers.
+// Trip Brief Console — modeled like a piece of mission-control hardware.
+// The textarea is a serif teleprompter; the four chips are punched-card
+// scenario presets; the CTA is a brushed-brass key.
 
 interface CinematicPromptBoxProps {
   query: string;
@@ -57,54 +53,85 @@ export function CinematicPromptBox({
   }
 
   return (
-    <form className="prompt reveal reveal--d1" onSubmit={handleSubmit}>
-      <header className="prompt__head">
-        <span className="prompt__head-left">
-          <span className="prompt__sigil" aria-hidden />
-          Intake // Trip Brief Console
+    <form
+      className="glass section reveal reveal--d1"
+      onSubmit={handleSubmit}
+      aria-label="Trip Brief Console"
+    >
+      <header className="console__head">
+        <span className="left">
+          <span
+            className="led"
+            style={
+              loading
+                ? {
+                    background: "#E9C77A",
+                    boxShadow:
+                      "0 0 0 3px rgba(232,199,122,.18), 0 0 10px #E9C77A",
+                  }
+                : undefined
+            }
+          />
+          <span>02 · Intake // Trip Brief Console</span>
         </span>
-        <span className="prompt__head-right">
-          {loading ? "Briefing in progress" : "Ready"}
+        <span className="right">
+          <span>{loading ? "Drafting" : "Ready"}</span>
         </span>
       </header>
 
-      <div className="prompt__body">
-        <textarea
-          aria-label="Travel question"
-          className="prompt__textarea"
-          value={query}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Describe your trip in plain words — month, budget, vibe, things you'd love or want to avoid…"
-          rows={4}
-          spellCheck
-        />
-      </div>
-
-      <div className="prompt__chips" aria-label="Scenario presets">
-        {SCENARIO_CHIPS.map((chip) => (
-          <button
-            type="button"
-            className="prompt__chip"
-            key={chip.label}
-            onClick={() => onChange(chip.prompt)}
-            disabled={loading}
-          >
-            <span className="prompt__chip-icon" aria-hidden>
-              ◇
+      <div className="console__body">
+        <div className="prompt-input">
+          <textarea
+            aria-label="Travel question"
+            className="prompt-textarea"
+            value={query}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Describe your trip in plain words — month, budget, vibe, things you'd love or want to avoid…"
+            rows={5}
+            spellCheck
+          />
+          <div className="prompt-ruler">
+            <span>
+              {query.trim().length} chars · auto-parsed into Trip DNA
             </span>
-            {chip.label}
-          </button>
-        ))}
+            <span className="kbd">
+              <kbd>⌘</kbd>
+              <kbd>↵</kbd>
+              <span>&nbsp;Submit briefing</span>
+            </span>
+          </div>
+        </div>
+
+        <aside className="console__aside">
+          <h4>Scenario presets</h4>
+          <div className="chips">
+            {SCENARIO_CHIPS.map((chip, i) => (
+              <button
+                type="button"
+                className="chip"
+                key={chip.label}
+                onClick={() => onChange(chip.prompt)}
+                disabled={loading}
+              >
+                <span className="chip__num">
+                  · {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="chip__punch" aria-hidden />
+                <span>{chip.label}</span>
+              </button>
+            ))}
+          </div>
+        </aside>
       </div>
 
-      <footer className="prompt__footer">
-        <span className="prompt__hint">
-          Cmd / Ctrl + Enter to submit · {query.trim().length} chars
+      <footer className="cta-row">
+        <span className="helper-line">
+          ⌘/Ctrl + ↵ to submit · the agent thinks in public for ~4 seconds
         </span>
-        <button type="submit" className="prompt__cta" disabled={loading}>
-          {loading ? "Drafting brief…" : "Generate briefing"}
-          <span className="prompt__cta-arrow" aria-hidden>
+        <button type="submit" className="brass-key" disabled={loading}>
+          {loading ? "Drafting briefing…" : "Generate briefing"}
+          <span className="arrow" aria-hidden>
             →
           </span>
         </button>

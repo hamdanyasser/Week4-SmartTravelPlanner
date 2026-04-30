@@ -1,10 +1,7 @@
-// "Trip DNA" — what the system parsed from the user's question.
-//
-// This is not a backend feature; it's a transparency surface so the user
-// instantly sees that AtlasBrief read their request as a structured intent,
-// not a wall of text. The labeled fields mirror the slots that the agent's
-// downstream tools actually use (budget, month, duration, climate,
-// activities, dislikes), plus the predicted travel style if available.
+// Trip DNA — six specimen vitrines (budget · month · duration · climate ·
+// activities · constraints) and an optional seventh card with the predicted
+// travel style once the ML classifier has spoken. Each cell reveals via a
+// clip-path ink-blot and tilts on hover.
 
 import { useMemo } from "react";
 import { formatBudget, parseTripDNA } from "../utils/parseQuery";
@@ -15,53 +12,63 @@ interface TripDNAPanelProps {
   travelStyle: TravelStyle | null;
 }
 
+interface Cell {
+  key: string;
+  label: string;
+  value: string;
+  tone: "" | "hot" | "cool";
+  muted: boolean;
+  tags?: string[];
+  hotTags?: boolean;
+}
+
 export function TripDNAPanel({ query, travelStyle }: TripDNAPanelProps) {
   const dna = useMemo(() => parseTripDNA(query), [query]);
 
-  const cells: Array<{
-    label: string;
-    value: string;
-    accent?: "cool" | "hot";
-    muted?: boolean;
-    tags?: string[];
-    hotTags?: boolean;
-  }> = [
+  const cells: Cell[] = [
     {
+      key: "budget",
       label: "Budget",
       value: formatBudget(dna.budgetUsd),
+      tone: "",
       muted: dna.budgetUsd === null,
     },
     {
+      key: "month",
       label: "Month",
       value: dna.month ?? "Not specified",
+      tone: "",
       muted: dna.month === null,
     },
     {
+      key: "duration",
       label: "Duration",
       value: dna.durationLabel ?? "Not specified",
+      tone: "",
       muted: dna.durationLabel === null,
     },
     {
+      key: "climate",
       label: "Climate",
       value: dna.climate ?? "Not specified",
-      accent: "hot",
+      tone: "hot",
       muted: dna.climate === null,
     },
     {
+      key: "activities",
       label: "Activities",
       value:
-        dna.activities.length > 0
-          ? dna.activities.join(" · ")
-          : "Not specified",
-      accent: "cool",
+        dna.activities.length > 0 ? dna.activities.join(" · ") : "Not specified",
+      tone: "cool",
       muted: dna.activities.length === 0,
       tags: dna.activities,
     },
     {
+      key: "constraints",
       label: "Constraints",
       value:
         dna.dislikes.length > 0 ? dna.dislikes.join(" · ") : "None detected",
-      accent: "hot",
+      tone: "hot",
       muted: dna.dislikes.length === 0,
       tags: dna.dislikes,
       hotTags: true,
@@ -69,67 +76,66 @@ export function TripDNAPanel({ query, travelStyle }: TripDNAPanelProps) {
   ];
 
   return (
-    <section className="dna reveal reveal--d2" aria-label="Trip DNA">
-      <div>
-        <div className="dna__heading">Trip DNA</div>
-        <h2 className="dna__title">What we read from your question.</h2>
-        <p className="dna__intro">
-          Parsed slots that the agent's tools will use downstream. If a slot
-          shows <em>not specified</em>, the agent infers it from context rather
-          than guessing on your behalf.
-        </p>
-        {travelStyle && (
-          <div style={{ marginTop: 18 }}>
-            <div className="dna__heading">Predicted travel style</div>
-            <div
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontSize: 28,
-                color: "var(--brass-500)",
-                marginTop: 4,
-              }}
-            >
-              {travelStyle}
-            </div>
-          </div>
-        )}
+    <section className="section reveal reveal--d2" aria-label="Trip DNA">
+      <div className="section__rail">
+        <span className="num">03</span>
+        <span className="div" aria-hidden />
+        <span className="tag">Trip DNA · what we read from your wish</span>
       </div>
-      <div className="dna__grid">
-        {cells.map((c) => (
+
+      <div className="dna">
+        {cells.map((c, i) => (
           <div
-            key={c.label}
+            key={c.key}
             className={
-              c.accent === "cool"
-                ? "dna__cell dna__cell--cool"
-                : c.accent === "hot"
-                ? "dna__cell dna__cell--hot"
-                : "dna__cell"
+              "specimen" +
+              (c.tone ? ` ${c.tone}` : "") +
+              (c.muted ? " unspec" : "")
+            }
+            style={
+              {
+                "--idx": i,
+                "--bx": `${15 + ((i * 23) % 70)}%`,
+                "--by": `${20 + ((i * 37) % 60)}%`,
+              } as React.CSSProperties
             }
           >
-            <div className="dna__cell-label">{c.label}</div>
-            <div
-              className={
-                c.muted
-                  ? "dna__cell-value dna__cell-value--muted"
-                  : "dna__cell-value"
-              }
-            >
-              {c.value}
+            <div className="label">{c.label}</div>
+            <div className="value">
+              {c.muted ? <em>{c.value}</em> : c.value}
             </div>
             {c.tags && c.tags.length > 0 && (
-              <div className="dna__cell-tags">
+              <div className="dna-tags">
                 {c.tags.map((t) => (
                   <span
                     key={t}
-                    className={c.hotTags ? "dna__tag dna__tag--hot" : "dna__tag"}
+                    className={c.hotTags ? "dna-tag dna-tag--hot" : "dna-tag"}
                   >
                     {t}
                   </span>
                 ))}
               </div>
             )}
+            <div className="pip">· {String(i + 1).padStart(2, "0")}</div>
           </div>
         ))}
+
+        {travelStyle && (
+          <div
+            className="specimen predicted"
+            style={
+              {
+                "--idx": cells.length,
+                "--bx": "70%",
+                "--by": "30%",
+              } as React.CSSProperties
+            }
+          >
+            <div className="label">Predicted travel style · ML</div>
+            <div className="value">{travelStyle}</div>
+            <div className="pip">· 07</div>
+          </div>
+        )}
       </div>
     </section>
   );
