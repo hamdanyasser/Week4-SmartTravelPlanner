@@ -17,6 +17,10 @@ os.environ.setdefault("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 os.environ.setdefault("DISCORD_WEBHOOK_URL", "http://127.0.0.1:9/atlasbrief-smoke")
 os.environ.setdefault("WEBHOOK_MAX_ATTEMPTS", "1")
 os.environ.setdefault("WEBHOOK_TIMEOUT_SECONDS", "0.2")
+# Force the deterministic strong-step fallback so the smoke test never reaches
+# out to a real LLM API even if the developer has keys in their shell env.
+os.environ["STRONG_MODEL_PROVIDER"] = "none"
+os.environ["CHEAP_MODEL_PROVIDER"] = "none"
 
 from app.agent.graph import AtlasBriefAgent
 from app.agent.registry import ALLOWED_TOOL_NAMES

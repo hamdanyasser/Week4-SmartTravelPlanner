@@ -82,9 +82,26 @@ def _summarize_tool(result: ToolExecutionResult) -> str:
 
 def _trace(results: list[ToolExecutionResult]) -> list[ToolTraceEntry]:
     return [
-        ToolTraceEntry(tool=result.tool_name, summary=_summarize_tool(result))
-        for result in results
+        ToolTraceEntry(tool=result.tool_name, summary=_summarize_tool(result)) for result in results
     ]
+
+
+_STYLE_TRAIT_HINTS: dict[TravelStyle, frozenset[str]] = {
+    TravelStyle.ADVENTURE: frozenset({"hiking", "cold-weather", "scenery"}),
+    TravelStyle.RELAXATION: frozenset({"warm", "less touristy"}),
+    TravelStyle.CULTURE: frozenset({"culture"}),
+    TravelStyle.LUXURY: frozenset({"luxury"}),
+    TravelStyle.FAMILY: frozenset({"family-friendly", "safe"}),
+    TravelStyle.BUDGET: frozenset({"budget-aware", "within budget"}),
+}
+
+
+def _style_aligns_with_traits(style: TravelStyle, traits: list[str]) -> bool:
+    """True when the agent's matched traits include any signal for `style`."""
+
+    hints = _STYLE_TRAIT_HINTS.get(style, frozenset())
+    trait_set = {t.lower() for t in traits}
+    return any(hint in trait_set for hint in hints)
 
 
 def _build_synthesis_user_prompt(
@@ -159,16 +176,35 @@ async def synthesize_trip_brief(
     )
 
     evidence = rag.results[0].content if rag.results else ""
-    dream_score = 86 if plan.destination == "Madeira" else 75
-    if ml.predicted_style != TravelStyle.ADVENTURE:
-        dream_score -= 8
 
-    rationale = (
-        "RAG evidence points to warm island hiking, quieter northern/interior "
-        "routes, and manageable logistics."
-    )
+    # Compute dream score from real signals instead of hardcoding it.
+    #   - ML confidence:      (0, 1] -> up to 35 points.
+    #   - RAG hit count:      0..3+  -> up to 25 points (8 per chunk, capped).
+    #   - Trait coverage:     up to 25 points (5 per matched trait, capped).
+    #   - Style alignment:    +15 if the agent's matched_traits look like the
+    #                         predicted travel style; otherwise 0.
+    # The 0..100 clamp at the boundary keeps the schema happy.
+    confidence_points = round(min(max(float(ml.confidence), 0.0), 1.0) * 35)
+    rag_points = min(len(rag.results), 3) * 8 + (1 if len(rag.results) > 3 else 0)
+    rag_points = min(rag_points, 25)
+    trait_points = min(len(plan.matched_traits) * 5, 25)
+    style_alignment = _style_aligns_with_traits(ml.predicted_style, plan.matched_traits)
+    style_points = 15 if style_alignment else 0
+    dream_score = confidence_points + rag_points + trait_points + style_points
+    dream_score = max(0, min(100, dream_score))
+
     if evidence:
         rationale = evidence[:260].rstrip() + "..."
+    else:
+        # Honest fallback: name the actual destination's strongest trait, not a
+        # Madeira-shaped sentence. The chosen row's `matched_traits` already
+        # tells us which signals the ranker actually fired on.
+        traits_text = ", ".join(plan.matched_traits[:4]) or "decision support"
+        rationale = (
+            f"{plan.destination} matches the dream side on: {traits_text}. "
+            "RAG fell back to the deterministic narrative path; the live signals "
+            "are still factored into the reality side below."
+        )
 
     user_prompt = _build_synthesis_user_prompt(query, plan, rag, ml, live)
     provider_text, final_usage = await try_strong_synthesis(

@@ -54,8 +54,13 @@ class Settings(BaseSettings):
     )
 
     jwt_secret_key: str | None = Field(
-        default=None,
-        description="Required for issuing JWTs. Set in backend/.env.",
+        default="dev-only-do-not-use-in-prod-please-rotate-on-deploy",
+        description=(
+            "Symmetric key for signing JWT access tokens. The default is a "
+            "deliberately obvious development placeholder so anonymous demo + "
+            "auth both work after `cp .env.example .env`. Production deploys "
+            "MUST override it via the JWT_SECRET_KEY env var (>= 32 random bytes)."
+        ),
     )
     jwt_algorithm: str = "HS256"
     jwt_access_token_minutes: int = 120
@@ -112,15 +117,18 @@ class Settings(BaseSettings):
         ),
     )
 
-    database_init_on_startup: bool = False
+    database_init_on_startup: bool = True
+    rag_ingest_on_startup: bool = Field(
+        default=True,
+        description=(
+            "If true, startup seeds the bundled RAG corpus into Postgres/pgvector "
+            "when the vector table is empty."
+        ),
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:
-        return [
-            origin.strip()
-            for origin in self.cors_allow_origins.split(",")
-            if origin.strip()
-        ]
+        return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
 
 
 @lru_cache(maxsize=1)
