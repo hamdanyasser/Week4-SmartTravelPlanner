@@ -1,5 +1,7 @@
 # AtlasBrief — AI Travel Briefing Room
 
+[![CI](https://github.com/hamdanyasser/Week4-SmartTravelPlanner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hamdanyasser/Week4-SmartTravelPlanner/actions/workflows/ci.yml)
+
 A Smart Travel Planner with a premium "AI travel briefing room" feel.
 
 The unique product layer is the **Decision Tension Board**:

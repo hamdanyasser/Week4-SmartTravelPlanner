@@ -30,7 +30,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
 | 2.1 | 10-15 destinations, 20-30 documents | `data/knowledge/` | DONE | 28 markdown docs across 14 destinations, each with destination/source metadata. |
-| 2.2 | Embeddings in Postgres via pgvector | `backend/app/models/document_chunk.py`, `backend/app/rag/ingest_documents.py` | DONE | Docker-backed ingest verified: 28 documents, 14 destinations, 28 pgvector chunks. Startup seeds the corpus when the chunk table is empty. |
+| 2.2 | Embeddings in Postgres via pgvector | `backend/app/models/document_chunk.py`, `backend/app/rag/ingest_documents.py` | DONE | **Live-verified 2026-05-01** under `docker compose up`: 28 documents, 14 destinations, 28 pgvector chunks (`used_database: true`). A subsequent live trip-brief returns `2 chunks via pgvector; top: Madeira (Madeira Budget and Booking Timing)`. See `CODE_REVIEW_NOTES.md` § Live Docker stack verification. |
 | 2.3 | Justified chunk size + overlap | `backend/app/rag/chunking.py`, `README.md` | DONE | 900-character chunks with 150-character overlap; rationale documented in README. |
 | 2.4 | Tested retrieval with hand-written queries | `backend/app/rag/retriever.py`, `backend/app/rag/smoke_test.py` | DONE | Three manual retrieval probes pass on the local fallback index; smoke test verifies the tool wrapper and schemas. |
 
@@ -102,7 +102,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 9.2 | Frontend container | `frontend/Dockerfile` | DONE | Frontend container runs the Vite app. |
 | 9.3 | Postgres + pgvector container | `docker-compose.yml` | DONE | `pgvector/pgvector:pg16` starts healthy under Compose. |
 | 9.4 | Named Postgres volume | `docker-compose.yml` | DONE | `pgdata` volume keeps users, runs, tool logs, webhook rows, and embeddings across restarts. |
-| 9.5 | One-command startup | `docker-compose.yml` | DONE | `docker compose up` starts db/backend/frontend; backend creates tables and seeds RAG when empty. |
+| 9.5 | One-command startup | `docker-compose.yml` | DONE | **Live-verified 2026-05-01**: `docker compose up -d --build` brings db/backend/frontend healthy in < 1 minute. Backend creates tables, seeds RAG into pgvector, serves `/health` 200, and a real trip-brief returns a `via pgvector` tool trace. See `CODE_REVIEW_NOTES.md` § Live Docker stack verification. |
 
 ## 10. Engineering Standards
 

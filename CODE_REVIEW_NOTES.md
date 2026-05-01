@@ -6,6 +6,70 @@ tradeoffs in human terms.
 
 ---
 
+## Live Docker stack verification (2026-05-01)
+
+### What changed
+
+Brought the full Docker stack up on this machine and proved the live
+pgvector path end-to-end. No code changes; this entry just captures the
+real artifacts.
+
+```
+docker compose up -d --build
+docker compose exec backend python -m alembic stamp head
+docker compose exec backend python -m app.rag.ingest_documents --db --reset
+```
+
+Live ingest output:
+
+```json
+{
+  "documents": 28,
+  "destinations": 14,
+  "chunks": 28,
+  "embedding_provider": "deterministic-hashing-v1",
+  "used_database": true,
+  "message": "Stored chunks and embeddings in Postgres/pgvector."
+}
+```
+
+Live golden trip brief against the Docker stack returns **real pgvector
+retrieval and the joblib-loaded ML model**:
+
+```
+top_pick: Madeira | Portugal
+counterfactual: Monteverde
+dream_fit: 84.0  reality_pressure: 74.0  latency_ms: 158
+retrieve_destination_knowledge -> 2 chunks via pgvector; top: Madeira (Madeira Budget and Booking Timing); covered: Madeira
+classify_travel_style          -> Predicted Adventure (joblib model, confidence 0.93)
+fetch_live_conditions          -> Pressure 74/100 (deterministic fallback); …
+```
+
+A non-golden query also proves the new ranker steers, in the live stack:
+
+```
+query: "Snow ski week in the Alps with my family, $4000"
+top_pick: Billund | Denmark
+counterfactual: Helsinki
+classify_travel_style -> Predicted Family (joblib model, confidence 0.97)
+```
+
+`alembic stamp head` is used because the lifespan handler creates the
+tables on startup; running `alembic upgrade head` against an
+already-bootstrapped database raises `DuplicateTableError`. Stamping
+records the schema as current so future `alembic upgrade` calls (e.g. on
+a fresh DB) work normally without conflicting on initial creation.
+
+### Verification commands
+
+```
+docker compose ps                              # all three services Up + healthy
+curl http://localhost:8000/health              # {"status":"ok"}
+curl POST /api/v1/trip-briefs (golden query)   # tool trace shows "via pgvector"
+```
+
+---
+
 ## Final 100% pass (2026-04-30)
 
 ### What changed
