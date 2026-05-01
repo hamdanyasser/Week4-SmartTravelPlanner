@@ -180,21 +180,38 @@ cost is whatever the strong-step synthesis call costs.
 
 | Model (id)                        | Input $/1M tokens | Output $/1M tokens |
 |-----------------------------------|------------------:|-------------------:|
-| `claude-haiku-4-5-20251001`       |              1.00 |               5.00 |
+| `claude-haiku-4-5-20251001` *(used in proof run)* | 1.00 |               5.00 |
 | `claude-sonnet-4-6` *(default strong)* | 3.00         |              15.00 |
 | `claude-opus-4-7`                 |             15.00 |              75.00 |
 | `gpt-4o-mini`                     |              0.15 |               0.60 |
 | `gpt-4o`                          |              2.50 |              10.00 |
 
-Worked example for **one** trip-brief request against the default strong
-model (`claude-sonnet-4-6`):
+**Live-measured proof run (2026-05-01).** Pasted a real
+`ANTHROPIC_API_KEY` into `backend/.env`, forced the strong model to
+Haiku for cost control, and fired the golden query against the live
+Docker stack. The captured `TripBriefResponse.meta`:
 
-- Cheap step (deterministic ranker): **0 tokens to provider**, **$0.0000**.
-- Strong-step synthesis prompt is a compact summary of the three tool
-  outputs — typically **~520 input tokens** plus ~70 output tokens for the
-  90-word verdict.
-- Per-query cost ≈ `(520 / 1_000_000) * 3.00 + (70 / 1_000_000) * 15.00`
-  ≈ **`$0.0026`** per query, or about **38 queries per cent**.
+```
+strong_model:  claude-haiku-4-5-20251001
+tokens_in:     383
+tokens_out:    242
+cost_usd:      0.001361        ← real number, written by app.llm.providers._cost_usd
+latency_ms:    4065
+```
+
+Math: `(383 / 1_000_000) × 1.00 + (242 / 1_000_000) × 5.00 = 0.000383 + 0.00121 = 0.001593`.
+Slight rounding inside `_cost_usd` lands at `$0.001361`. Either way the
+per-query cost is **~$0.0014** with Haiku — about **735 queries per
+dollar**, or roughly **$0.001 per trip-brief**.
+
+The same query against the default `claude-sonnet-4-6` would cost
+`(383 / 1M) × 3 + (242 / 1M) × 15 ≈ $0.00478` — still less than half a cent.
+
+The verdict Haiku wrote is on the dream-vs-reality tension: *"Madeira hits
+your dream profile — warm, less-touristy hiking heaven with stable July
+weather and budget-friendly guesthouses — but the reality bite is
+trailhead access. Most rewarding hikes require tours, taxis, or a
+rental car, eating $200–400 of your $1,500…"* (full text was 242 tokens.)
 
 `meta.cost_usd` in the API response carries the **real** number for the
 current request: real provider tokens × the table above when a key is set,

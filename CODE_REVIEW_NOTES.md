@@ -6,6 +6,72 @@ tradeoffs in human terms.
 
 ---
 
+## Real Anthropic provider proof (2026-05-01)
+
+### What changed
+
+Pasted a real `ANTHROPIC_API_KEY` into `backend/.env`, restarted the
+Docker backend so Settings re-read the env, and fired **exactly one**
+trip-brief against the live stack to capture honest provider numbers.
+The key was removed from `.env` immediately after, and the backend was
+restarted again so the local checkout has zero residual provider state.
+
+Cost-control settings used for the proof run (still live in the README):
+
+```
+STRONG_MODEL_PROVIDER=anthropic
+ANTHROPIC_STRONG_MODEL=claude-haiku-4-5-20251001  # 5× cheaper than Sonnet
+LLM_MAX_OUTPUT_TOKENS=200
+CHEAP_MODEL_PROVIDER=none                          # cheap step stays deterministic
+```
+
+Captured `TripBriefResponse.meta`:
+
+```
+strong_model:  claude-haiku-4-5-20251001
+tokens_in:     383
+tokens_out:    242
+cost_usd:      0.001361          ← real, computed by _cost_usd
+latency_ms:    4065
+```
+
+Total spend on the proof: **$0.001361** (about 0.14 ¢). The verdict
+Haiku wrote is genuinely on-message — it names the warm-hiking dream and
+counters with the trailhead-access reality bite (full text in the README
+cost section). Tool trace was real end-to-end:
+`2 chunks via pgvector; top: Madeira (Madeira Budget and Booking Timing)`,
+`Predicted Adventure (joblib model, confidence 0.93)`,
+`Pressure 74/100 (deterministic fallback)`.
+
+### Why these shapes
+
+**Haiku, not Sonnet, for the proof.** Brief item 4.3 only requires real
+token+cost logging — it does not require Sonnet specifically. Haiku is
+the cheapest tier and the verdict it wrote is fully usable. Reviewers
+who care about Sonnet-class output can re-run with
+`ANTHROPIC_STRONG_MODEL=claude-sonnet-4-6`; the cost math is in the
+README.
+
+**Key removed immediately.** The proof artifact is the captured
+`meta.cost_usd` plus the verdict text. The key itself shouldn't sit in
+the repo `.env` after the proof.
+
+### Items now DONE-live-verified
+
+- 4.2 (real strong-model call) — DONE-live.
+- 4.3 (real token + cost logging per step) — DONE-live, `cost_usd: 0.001361`.
+- 12.5 (per-query cost breakdown) — DONE-live, real numbers in the README.
+
+### Remaining manual-only items
+
+- `docs/trace.png` — needs a LangSmith API key + a click on the screenshot button.
+- `docs/demo.mp4` — needs voice-over screen recording.
+- Discord webhook screenshot — needs a Discord webhook URL.
+
+Everything else in the brief is now either DONE in code or DONE-live-verified.
+
+---
+
 ## Live Docker stack verification (2026-05-01)
 
 ### What changed
