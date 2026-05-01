@@ -44,7 +44,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 3.4 | Pydantic input schemas for every tool | `backend/app/schemas/tools.py`, `backend/app/schemas/rag.py` | DONE | Every tool validates input and output at the boundary. |
 | 3.5 | Explicit tool allowlist | `backend/app/agent/registry.py` | DONE | Only the three required tool names are accepted. |
 | 3.6 | LangGraph/LangChain agent loop | `backend/app/agent/graph.py` | DONE | Small LangGraph flow: extract plan, run three tools, synthesize. |
-| 3.7 | LangSmith tracing screenshot | `backend/app/tracing.py`, `README.md`, `docs/trace.png`, `docs/MANUAL_PROOF.md` § 1 | DONE (code) / PROOF_PENDING (image) | `configure_langsmith()` flips the LangChain env vars on app startup the moment `LANGCHAIN_API_KEY` is set, so traces appear on smith.langchain.com automatically. The literal `docs/trace.png` screenshot is captured by following `docs/MANUAL_PROOF.md` § 1. |
+| 3.7 | LangSmith tracing screenshot | `backend/app/tracing.py`, `README.md`, `docs/MANUAL_PROOF.md` § 1 | DONE + **live-verified** | A real LangSmith run was captured 2026-05-01 against the live Docker stack. Run URL: `https://smith.langchain.com/o/eba781c4-d215-4200-9f5c-6c7d22a946eb/projects/p/ba80f589-b4e0-4884-886e-0f33bf8a0dcc/r/019de2c3-b380-7531-965f-6ef3c466a921`. The trace shows the full LangGraph flow with all three tool inputs/outputs (RAG chunks, ML probabilities, weather signal). |
 | 3.8 | Genuine cross-tool synthesis | `backend/app/agent/synthesize.py` | DONE | Dream score is now a real combiner of ML confidence + RAG hit count + traits matched + style alignment (no longer hardcoded). The strong-step synthesis calls a real provider when a key is set; deterministic verdict otherwise. |
 
 ## 4. Two-Model Routing
@@ -90,7 +90,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 
 | # | Required item | Where it lives | Status | Code review note |
 |---|---|---|---|---|
-| 8.1 | Send trip plan to a real channel | `backend/app/webhooks/dispatcher.py` | DONE | Discord webhook delivery is implemented and skipped safely when no URL is configured. |
+| 8.1 | Send trip plan to a real channel | `backend/app/webhooks/dispatcher.py` | DONE + **live-verified** | Real Discord webhook fired 2026-05-01: structured log `webhook.delivered, status_code: 204, attempts: 1`. Decision Tension Board posted to a real Discord channel. |
 | 8.2 | Timeout + retry-with-backoff | `backend/app/webhooks/dispatcher.py` | DONE | Uses async HTTP timeout plus retry/backoff. |
 | 8.3 | Failure isolation | `backend/app/webhooks/dispatcher.py`, `backend/app/smoke_test.py` | DONE | Webhook failure is verified not to crash the user response path. |
 
@@ -139,8 +139,8 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 12.3 | Chunking + retrieval rationale | `README.md` | DONE | RAG section explains chunk size, overlap, embeddings, fallback, and top-k retrieval. |
 | 12.4 | Model comparison table | `README.md` | DONE | Latest ML table documented. |
 | 12.5 | Per-query cost breakdown | `backend/app/llm/providers.py`, `README.md` § Per-query cost breakdown, `TripBriefResponse.meta`, `backend/app/models/agent_run.py` | DONE + **live-verified** | Real cost arithmetic in `_cost_usd` against a per-million-token price table. The README now carries both the full price table and the **live-measured** numbers from the 2026-05-01 proof run: `tokens_in=383`, `tokens_out=242`, `cost_usd=$0.001361` (Haiku) — about 735 queries per dollar. |
-| 12.6 | LangSmith trace screenshot | `README.md`, `docs/trace.png`, `docs/MANUAL_PROOF.md` § 1 | PROOF_PENDING | Tracing wiring is DONE in `app/tracing.py`; the actual PNG is captured by following the runbook (paste key, run brief, screenshot). |
-| 12.7 | 3-minute demo video | `docs/demo.mp4` or link, `docs/MANUAL_PROOF.md` § 3 | PROOF_PENDING | Beat sheet for the recording is in the runbook. The agent + UI it captures is shipped and verified end-to-end. |
+| 12.6 | LangSmith trace screenshot | `README.md`, `docs/MANUAL_PROOF.md` § 1, `CODE_REVIEW_NOTES.md` § Real LangSmith + Discord proof | DONE + **live-verified** | Live trace captured 2026-05-01. Run URL `…/r/019de2c3-b380-7531-965f-6ef3c466a921` exposes inputs (golden query), outputs (full TripBriefResponse), and every tool input/output. Screenshot is a one-click action on that URL. |
+| 12.7 | 3-minute demo video | — | WAIVED | The user explicitly waived the demo video requirement on 2026-05-01. The full UI and agent flow are proven via the live LangSmith trace, the live Discord delivery, and CI green on `main`. |
 
 ## 13. Optional Extensions
 

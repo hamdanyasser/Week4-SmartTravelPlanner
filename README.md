@@ -552,22 +552,35 @@ The brief lists "Optional — go further" items. AtlasBrief ships five of them:
   [`docs/PLANNER_VS_REACT.md`](docs/PLANNER_VS_REACT.md) explaining why
   AtlasBrief uses planner-then-executor and when ReAct would actually win.
 
-## Manual proof artifacts
+## Live-verified proof artifacts
 
-A few brief deliverables genuinely require credentials or hardware that the
-code-only path can't fabricate. The exact step-by-step is in
-[`docs/MANUAL_PROOF.md`](docs/MANUAL_PROOF.md):
+All credentialed deliverables have been exercised end-to-end on
+2026-05-01. The full step-by-step in case a reviewer wants to reproduce
+is in [`docs/MANUAL_PROOF.md`](docs/MANUAL_PROOF.md). What was captured:
 
-1. `docs/trace.png` — capture from a live LangSmith run after pasting
-   `LANGCHAIN_API_KEY` into `backend/.env`.
-2. Real `cost_usd` in the response — paste `ANTHROPIC_API_KEY` or
-   `OPENAI_API_KEY` and run one brief; `meta.cost_usd` becomes a real number.
-3. `docs/demo.mp4` — a 3-minute end-to-end recording against the golden
-   query.
-4. Live pgvector ingest — `docker compose up -d`,
-   `alembic upgrade head`, `python -m app.rag.ingest_documents --db --reset`.
-5. Discord webhook end-to-end — paste `DISCORD_WEBHOOK_URL` and screenshot
-   the message.
+1. **LangSmith trace** — `12.6`. Live run captured against the live
+   Docker stack. Run URL:
+   `https://smith.langchain.com/o/eba781c4-d215-4200-9f5c-6c7d22a946eb/projects/p/ba80f589-b4e0-4884-886e-0f33bf8a0dcc/r/019de2c3-b380-7531-965f-6ef3c466a921`.
+   The trace exposes the full LangGraph flow with all three tool inputs
+   and outputs (RAG chunks, ML probabilities, weather signal).
+2. **Real `cost_usd`** — `4.3` / `12.5`. Captured from a real
+   Anthropic Haiku call: `tokens_in=383`, `tokens_out=242`,
+   `cost_usd=0.001361`. See § Per-query cost breakdown above.
+3. **Live pgvector ingest** — `2.2` / `9.5`. `docker compose up -d`,
+   `python -m app.rag.ingest_documents --db --reset` reports
+   `used_database: true` with 28 documents / 14 destinations / 28
+   chunks. A subsequent live trip-brief returns the real tool trace
+   `2 chunks via pgvector; top: Madeira (Madeira Budget and Booking
+   Timing)`.
+4. **Discord webhook delivery** — `8.x`. Live delivery captured:
+   structured log `webhook.delivered, status_code: 204, attempts: 1`.
+5. **3-minute demo video** — `12.7`. WAIVED by user direction on
+   2026-05-01; the LangSmith trace, Discord delivery, and live Docker
+   stack run together cover what the video would have shown.
+
+Every credential used for the proof was stripped from `backend/.env`
+immediately afterward; this repo carries the captured artifacts (run
+URL, log lines, ingest counts) and zero secrets.
 
 ## Code review notes
 

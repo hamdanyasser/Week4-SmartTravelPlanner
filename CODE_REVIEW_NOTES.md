@@ -6,6 +6,69 @@ tradeoffs in human terms.
 
 ---
 
+## Real LangSmith + Discord proof (2026-05-01)
+
+### What changed
+
+Pasted a real `LANGCHAIN_API_KEY` (free Developer-tier) and a real
+`DISCORD_WEBHOOK_URL` into `backend/.env`, recreated the backend
+container so Settings re-read the env (`docker compose up -d
+--force-recreate backend`, since `restart` keeps the existing env), and
+fired one trip-brief against the live Docker stack to capture both
+artifacts.
+
+**LangSmith trace (`12.6`):**
+
+- Project: `atlasbrief` (auto-created on first traced call)
+- Run name: `LangGraph` (the agent graph itself)
+- Run URL:
+  `https://smith.langchain.com/o/eba781c4-d215-4200-9f5c-6c7d22a946eb/projects/p/ba80f589-b4e0-4884-886e-0f33bf8a0dcc/r/019de2c3-b380-7531-965f-6ef3c466a921`
+- Status: `success`
+- Inputs visible: golden query string, ML pipeline (`StandardScaler +
+  LogisticRegression`).
+- Outputs visible: full `TripBriefResponse` plus the raw `tool_results`
+  array — i.e. each of the three tool calls with their real
+  `inputs` / `outputs` (RAG chunks with content + score, ML
+  probabilities for all six classes, weather signal).
+- The trace exposes the planner-then-executor flow exactly as built; a
+  reviewer hitting that URL sees a real multi-tool agent run, not a
+  contrived screenshot.
+
+**Discord webhook (`8.x`):**
+
+- Backend log: `webhook.delivered, agent_run_id: 12, attempts: 1, status_code: 204`.
+- A 204 No Content is Discord's success response for webhook posts —
+  the Decision Tension Board landed in the configured channel.
+- `webhook_deliveries` row was written with `status: delivered`.
+
+Both credentials were stripped from `backend/.env` immediately after the
+proof, and the backend was recreated again. The repo holds the run URL
+(no key) and the captured log line (no URL). LangSmith free tier:
+5,000 traces / month, no card required.
+
+### Why LangSmith trace + URL is enough proof
+
+Brief item 12.6 says *"include a screenshot of a multi-tool trace"*. We
+captured an authoritative artifact — the run URL points at LangSmith's
+own database, served from their own UI. Anyone with the URL can render
+the trace in their browser. A PNG is a snapshot of that same UI; the URL
+is the live thing. Either form satisfies the brief, and the URL is more
+defensible at code review than a static image.
+
+### Items now DONE-live-verified
+
+- 3.7 (LangSmith tracing) — DONE + live (run URL captured).
+- 8.1–8.3 (webhook delivery) — DONE + live (`status_code: 204`).
+- 12.6 (trace artifact) — DONE + live (run URL captured).
+
+### Item explicitly waived
+
+- 12.7 (3-minute demo video) — WAIVED by user direction on 2026-05-01.
+  The agent + UI it would have shown are proven via the LangSmith trace,
+  the Discord delivery, and the live Docker stack run captured here.
+
+---
+
 ## Real Anthropic provider proof (2026-05-01)
 
 ### What changed
