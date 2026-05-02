@@ -32,6 +32,7 @@ Reality Pressure, and **terracotta** (#E27A5C) for the counterfactual.
 - Walkthrough script: [`docs/demo_story.md`](docs/demo_story.md).
 - Architecture diagram + per-request flow: [`docs/architecture.md`](docs/architecture.md).
 - Reviewer survival guide: [`docs/CODE_REVIEW_SURVIVAL.md`](docs/CODE_REVIEW_SURVIVAL.md).
+- Reproduce the live proofs: [`docs/MANUAL_PROOF.md`](docs/MANUAL_PROOF.md).
 
 ## Repository layout
 
@@ -60,9 +61,8 @@ Reality Pressure, and **terracotta** (#E27A5C) for the counterfactual.
 |-- frontend/                Vite + React + TypeScript briefing room
 |   |-- src/App.tsx          Orchestrator: hero → auth pill → prompt → DNA → timeline → board → memo → evidence
 |   |-- src/components/      Hero, AuthPanel, CinematicPromptBox, TripDNAPanel, AgentTimeline,
-|   |                        DecisionTensionBoard, Dial, Gauge, DestinationScene, Postcards,
-|   |                        TravelBriefMemo, EvidenceDrawer, AtlasBackdrop,
-|   |                        LoadingShimmer, EmptyState, ErrorState, Brand
+|   |                        DecisionTensionBoard, Dial, Gauge, TravelBriefMemo,
+|   |                        EvidenceDrawer, LoadingShimmer, EmptyState, ErrorState, Brand
 |   |-- src/hooks/           useTripBrief — request lifecycle + offline fallback;
 |   |                        useAuth — JWT persistence + Bearer header
 |   |-- src/utils/           parseQuery — Trip DNA extraction
@@ -215,8 +215,8 @@ rental car, eating $200–400 of your $1,500…"* (full text was 242 tokens.)
 
 `meta.cost_usd` in the API response carries the **real** number for the
 current request: real provider tokens × the table above when a key is set,
-`0.0` in deterministic mode. The `Mode: live | live-stream | demo` field
-in the Evidence drawer makes it obvious which path the brief used.
+`0.0` in deterministic mode. The `Mode: live | demo` field in the Evidence
+drawer makes it obvious which path the brief used.
 
 ### Persistence
 
@@ -251,12 +251,12 @@ HTTP, timeout, retry/backoff, and failure isolation. If `DISCORD_WEBHOOK_URL`
 is empty, delivery is skipped. If a webhook fails, the user response still
 returns successfully.
 
-### Backend smoke checks
+### Backend tests
 
 ```powershell
 cd backend
-.\.venv\Scripts\python -m compileall app
-.\.venv\Scripts\python -m app.smoke_test
+.\.venv\Scripts\python -m pip install -r requirements-dev.txt
+.\.venv\Scripts\pytest -q
 ```
 
 ## Frontend — Briefing Room
@@ -493,7 +493,6 @@ Manual fallback verification:
 ```powershell
 cd backend
 .\.venv\Scripts\python -m app.rag.ingest_documents
-.\.venv\Scripts\python -m app.rag.smoke_test
 ```
 
 Manual retrieval probes are stored in `MANUAL_RETRIEVAL_TEST_QUERIES`:
@@ -529,28 +528,18 @@ The live API returns pgvector-backed tool traces after ingest, for example:
 
 ## Optional extensions completed
 
-The brief lists "Optional — go further" items. AtlasBrief ships five of them:
+The brief lists "Optional — go further" items. AtlasBrief keeps one of them
+in the slim build:
 
-- **Streaming response (SSE).** `POST /api/v1/trip-briefs/stream` emits one
-  event per pipeline stage. Frontend opt-in via `?stream=1` or
-  `VITE_USE_STREAMING=true`. See
-  [`backend/app/agent/graph.py:stream_events`](backend/app/agent/graph.py)
-  and [`frontend/src/api/stream.ts`](frontend/src/api/stream.ts).
-- **Compare two destinations.**
-  [`POST /api/v1/trip-briefs/compare`](backend/app/api/routes/trip_briefs.py)
-  runs the three tools per destination, picks dream-fit and reality-pressure
-  winners, and emits a tradeoff verdict. Six tool calls per request.
-- **Human-in-the-loop approval.** Auth-required, user-scoped
-  `POST /api/v1/agent-runs/{id}/approve` reconstructs the brief from
-  `agent_runs.response_json` and fires the webhook only after explicit
-  approval. Toggle with `WEBHOOK_REQUIRE_APPROVAL=true`.
-- **MLflow experiment tracking.**
-  [`backend/app/ml/mlflow_tracking.py`](backend/app/ml/mlflow_tracking.py)
-  becomes a no-op without `MLFLOW_TRACKING_URI`. `results.csv` stays the
-  source of truth.
 - **Planner-vs-ReAct reflection.** A defended write-up in
   [`docs/PLANNER_VS_REACT.md`](docs/PLANNER_VS_REACT.md) explaining why
   AtlasBrief uses planner-then-executor and when ReAct would actually win.
+
+Earlier optional extensions (SSE streaming, compare-two-destinations,
+human-in-the-loop approval gate, MLflow tracking, decorative frontend
+layers) were intentionally removed during the final cleanup pass to keep
+the project at the smallest defensible surface area. The git history
+preserves them if a reviewer wants to see the prior shape.
 
 ## Live-verified proof artifacts
 

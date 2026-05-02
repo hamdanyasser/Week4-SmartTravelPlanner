@@ -47,7 +47,6 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/smoke_test.py" = ["E402"]
 "tests/*.py" = [
     "PLR2004",
     "PLR0913",

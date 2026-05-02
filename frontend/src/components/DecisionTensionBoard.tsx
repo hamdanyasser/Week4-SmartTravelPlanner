@@ -8,12 +8,8 @@
 //      verdigris pressure gauge (Reality Pressure, live conditions)
 //   4. Final Verdict — full-width editorial pull-quote with brass drop-cap
 //   5. "Why not the obvious pick?" — counterfactual with hairline strike
-//
-// The cinematic backdrop layer is `DestinationScene`; it sits behind the
-// content with a fade-out mask so the bottom half stays legible.
 
 import type { CounterfactualCard, DestinationCandidate } from "../api/types";
-import { DestinationScene } from "./DestinationScene";
 import { Dial } from "./Dial";
 import { Gauge } from "./Gauge";
 
@@ -43,8 +39,6 @@ export function DecisionTensionBoard({
       className="glass tension reveal reveal--d4"
       aria-label="Decision Tension Board"
     >
-      <DestinationScene />
-
       <div className="tension__topline">
         <span className="seam" aria-hidden />
         <span>05 · Decision Tension Board</span>

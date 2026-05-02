@@ -191,9 +191,9 @@ These are non-negotiable; the brief calls them out explicitly.
   behavior and three manual retrieval probes.
 - `backend/app/tools/retrieve_destination_knowledge.py` - allowlisted tool
   wrapper around RAG retrieval.
-- Live Postgres/pgvector ingest is still environment-blocked here because
-  Docker Desktop is not reachable. `backend/app/rag/smoke_test.py` verifies the
-  deterministic fallback path.
+- Live Postgres/pgvector ingest was verified on 2026-05-01 under
+  `docker compose up`. The pytest suite under `tests/` covers the
+  deterministic fallback path and the tool wrapper end-to-end.
 
 **Backend agent/auth/persistence/webhook shipped:**
 - Auth: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, bcrypt,
@@ -208,17 +208,22 @@ These are non-negotiable; the brief calls them out explicitly.
   metadata in `TripBriefResponse.meta`.
 - Webhook: Discord dispatcher with async timeout, retry/backoff, and failure
   isolation.
-- Smoke verification: `backend/app/smoke_test.py` covers auth hashing/JWT,
-  tool allowlist, agent path, local RAG fallback, ML tool path, and webhook
-  failure isolation.
+- Test suite: `tests/` covers schemas, every allowlisted tool in isolation,
+  the agent end-to-end, the auth/JWT round-trip, the cache, the JSON
+  formatter, and the webhook failure-isolation path. CI runs it on every
+  push.
+
+**Cleanup pass (2026-05-02)**: Removed Tier-1 stale docs
+(`DAY1_CODE_WALKTHROUGH.md`, `LIVE_VERIFICATION.md`) and the legacy smoke
+scripts (`backend/app/smoke_test.py`, `backend/app/rag/smoke_test.py` —
+superseded by the pytest suite). Removed the optional extensions that
+were inflating review surface area without adding to the required nine:
+SSE streaming, compare-two-destinations, HITL approval gate, MLflow
+tracking, and the decorative frontend layers (`AtlasBackdrop`,
+`Postcards`, `DestinationScene`). Planner-vs-ReAct write-up kept.
 
 **What is still missing**:
-- Alembic migrations.
-- Formal pytest suite, linter, pre-commit, and CI.
-- Real provider-backed LLM routing and real provider cost accounting.
-- LangSmith tracing screenshot.
-- Frontend auth flow/tool-trace enhancements.
-- Demo video.
+- Demo video — explicitly waived 2026-05-01.
 
 The full status table lives in `REQUIREMENTS_CHECKLIST.md`.
 
@@ -257,5 +262,6 @@ When in doubt, ask.
 
 - [REQUIREMENTS_CHECKLIST.md](REQUIREMENTS_CHECKLIST.md) — full status table
 - [CODE_REVIEW_NOTES.md](CODE_REVIEW_NOTES.md) — change log (newest on top)
-- [docs/DAY1_CODE_WALKTHROUGH.md](docs/DAY1_CODE_WALKTHROUGH.md) — line-level Day 1 explainer
+- [docs/CODE_REVIEW_SURVIVAL.md](docs/CODE_REVIEW_SURVIVAL.md) — reviewer-facing defense brief
+- [docs/MANUAL_PROOF.md](docs/MANUAL_PROOF.md) — runbook to reproduce the live proofs
 - [README.md](README.md) — public-facing project README

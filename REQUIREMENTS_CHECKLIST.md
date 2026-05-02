@@ -32,7 +32,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 2.1 | 10-15 destinations, 20-30 documents | `data/knowledge/` | DONE | 28 markdown docs across 14 destinations, each with destination/source metadata. |
 | 2.2 | Embeddings in Postgres via pgvector | `backend/app/models/document_chunk.py`, `backend/app/rag/ingest_documents.py` | DONE | **Live-verified 2026-05-01** under `docker compose up`: 28 documents, 14 destinations, 28 pgvector chunks (`used_database: true`). A subsequent live trip-brief returns `2 chunks via pgvector; top: Madeira (Madeira Budget and Booking Timing)`. See `CODE_REVIEW_NOTES.md` § Live Docker stack verification. |
 | 2.3 | Justified chunk size + overlap | `backend/app/rag/chunking.py`, `README.md` | DONE | 900-character chunks with 150-character overlap; rationale documented in README. |
-| 2.4 | Tested retrieval with hand-written queries | `backend/app/rag/retriever.py`, `backend/app/rag/smoke_test.py` | DONE | Three manual retrieval probes pass on the local fallback index; smoke test verifies the tool wrapper and schemas. |
+| 2.4 | Tested retrieval with hand-written queries | `backend/app/rag/retriever.py`, `tests/test_tool_retrieve_knowledge.py` | DONE | Three manual retrieval probes pass on the local fallback index; pytest covers the tool wrapper and schemas. |
 
 ## 3. Agent - Exactly 3 Tools
 
@@ -84,7 +84,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 | 7.3 | Chat-style trip query | `frontend/src/components/CinematicPromptBox.tsx` | DONE | Premium intake console with serif textarea, scenario chips, Cmd/Ctrl+Enter submit. |
 | 7.4 | Tool-trace visibility | `frontend/src/components/AgentTimeline.tsx`, `frontend/src/components/EvidenceDrawer.tsx` | DONE | Mission timeline animates the seven backend stages and shows the real `tools_used` summaries when the response lands; Evidence drawer surfaces tool calls and run accounting. |
 | 7.5 | Decision Tension Board UI | `frontend/src/components/DecisionTensionBoard.tsx` | DONE | Dream Fit (brass) vs Reality Pressure (verdigris) score cards, editorial Final Verdict with tri-color top rule, terracotta counterfactual card. |
-| 7.6 | Streaming response | `frontend/src/api/stream.ts`, `backend/app/api/routes/trip_briefs.py` (`/trip-briefs/stream`), `backend/app/agent/graph.py` (`stream_events`) | DONE | Optional. SSE endpoint emits one event per stage; frontend consumer drives the cinematic timeline from real events when `?stream=1` or `VITE_USE_STREAMING=true`. Default still uses the JSON path with the fake-but-honest timer. |
+| 7.6 | Streaming response | — | REMOVED | Optional extension. Removed during the 2026-05-02 cleanup pass to keep the project at minimum defensible surface area. The default JSON path with the fake-but-honest stage timer remains. |
 
 ## 8. Webhook Delivery
 
@@ -92,7 +92,7 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 |---|---|---|---|---|
 | 8.1 | Send trip plan to a real channel | `backend/app/webhooks/dispatcher.py` | DONE + **live-verified** | Real Discord webhook fired 2026-05-01: structured log `webhook.delivered, status_code: 204, attempts: 1`. Decision Tension Board posted to a real Discord channel. |
 | 8.2 | Timeout + retry-with-backoff | `backend/app/webhooks/dispatcher.py` | DONE | Uses async HTTP timeout plus retry/backoff. |
-| 8.3 | Failure isolation | `backend/app/webhooks/dispatcher.py`, `backend/app/smoke_test.py` | DONE | Webhook failure is verified not to crash the user response path. |
+| 8.3 | Failure isolation | `backend/app/webhooks/dispatcher.py`, `tests/test_webhook.py` | DONE | Webhook failure is verified not to crash the user response path. |
 
 ## 9. Docker - Whole Stack
 
@@ -146,13 +146,13 @@ The longer reasoning lives in `CODE_REVIEW_NOTES.md`.
 
 | Extension | Where it lives | Status | Code review note |
 |---|---|---|---|
-| Streaming response (SSE) | `backend/app/api/routes/trip_briefs.py`, `backend/app/agent/graph.py`, `frontend/src/api/stream.ts` | DONE | Per-stage SSE events; opt-in on the frontend via `?stream=1`. |
-| Compare two destinations | `backend/app/agent/compare.py`, `backend/app/schemas/compare.py`, `POST /api/v1/trip-briefs/compare` | DONE | Six tool calls per request, named dream/reality winners, tradeoff verdict. |
-| Human-in-the-loop approval | `backend/app/api/routes/trip_briefs.py` (`/agent-runs/{id}/approve`), `backend/app/config.py` (`WEBHOOK_REQUIRE_APPROVAL`) | DONE | Auth-required, user-scoped; brief is reconstructed from `agent_runs.response_json` so the channel message matches what the user saw. |
-| MLflow experiment tracking | `backend/app/ml/mlflow_tracking.py`, `backend/app/ml/train_classifier.py` | DONE | No-op unless `MLFLOW_TRACKING_URI` is set; `results.csv` stays the source of truth. |
 | Planner-vs-ReAct reflection | `docs/PLANNER_VS_REACT.md` | DONE | Defended write-up of why the agent uses planner-then-executor and when ReAct would actually win. |
-| Deploy (Railway/Vercel/Supabase) | — | NOT_STARTED | Requires real cloud accounts; out of scope for code-only session. |
+| Streaming response (SSE) | — | REMOVED | Shipped earlier; removed in the 2026-05-02 cleanup pass to shrink review surface. |
+| Compare two destinations | — | REMOVED | Shipped earlier; removed in the 2026-05-02 cleanup pass. |
+| Human-in-the-loop approval | — | REMOVED | Shipped earlier; removed in the 2026-05-02 cleanup pass. |
+| MLflow experiment tracking | — | REMOVED | Shipped earlier; removed in the 2026-05-02 cleanup pass. `results.csv` remains the source of truth. |
 | SEQ / Loki structured logging sink | `backend/app/logging_config.py` | PARTIAL | JSON-on-stdout is in place; collectors can be pointed at the container log stream without code changes. |
+| Deploy (Railway/Vercel/Supabase) | — | NOT_STARTED | Requires real cloud accounts; out of scope for code-only session. |
 | Secrets management (Vault/Doppler) | — | NOT_STARTED | `pydantic-settings` already structures config; switching to a vault is a deployment-time concern. |
 
 ---

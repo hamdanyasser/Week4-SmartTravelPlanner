@@ -166,8 +166,8 @@ DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
 
 Webhook failure is intentionally isolated from the user response — see
-`backend/app/webhooks/dispatcher.py` and the smoke test
-`backend/app/smoke_test.py` for the failure-injection coverage.
+`backend/app/webhooks/dispatcher.py` and `tests/test_webhook.py` for
+the failure-injection coverage.
 
 ---
 

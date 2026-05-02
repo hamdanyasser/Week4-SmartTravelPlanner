@@ -1,16 +1,10 @@
 // AtlasBrief — single-page briefing room.
 //
 // Reads top-to-bottom as the user's experience:
-//   atlas backdrop (fixed) → topbar (brand · status · auth) → hero →
-//   intake console → trip DNA → mission timeline → tension board →
-//   postcards strip → executive memo → footer · evidence drawer.
-//
-// The atmosphere layer (AtlasBackdrop) is fixed behind everything; cursor
-// position is tracked here and pushed in as CSS variables so it stays a
-// single source of truth.
+//   topbar (brand · status · auth) → hero → intake console → trip DNA →
+//   mission timeline → tension board → executive memo → footer · evidence drawer.
 
-import { useEffect, useState } from "react";
-import { AtlasBackdrop } from "./components/AtlasBackdrop";
+import { useState } from "react";
 import { AuthPanel } from "./components/AuthPanel";
 import { Brand } from "./components/Brand";
 import { CinematicPromptBox } from "./components/CinematicPromptBox";
@@ -20,7 +14,6 @@ import { ErrorState } from "./components/ErrorState";
 import { EvidenceDrawer } from "./components/EvidenceDrawer";
 import { Hero } from "./components/Hero";
 import { LoadingShimmer } from "./components/LoadingShimmer";
-import { Postcards } from "./components/Postcards";
 import { TIMELINE_STAGES, AgentTimeline } from "./components/AgentTimeline";
 import { TravelBriefMemo } from "./components/TravelBriefMemo";
 import { TripDNAPanel } from "./components/TripDNAPanel";
@@ -34,33 +27,14 @@ export default function App() {
   const [query, setQuery] = useState(GOLDEN_DEMO_QUERY);
   const trip = useTripBrief(TIMELINE_STAGES.length);
   const auth = useAuth();
-  const [parallax, setParallax] = useState({ x: 0, y: 0 });
-
-  // Mouse parallax for the celestial atlas. Bypassed by reduced-motion users.
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return;
-    }
-    const onMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * -24;
-      const y = (e.clientY / window.innerHeight - 0.5) * -16;
-      setParallax({ x, y });
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
 
   const showEmpty = !trip.brief && !trip.loading && !trip.error;
   const showShimmer = trip.loading && !trip.brief;
-  const isThinking = trip.loading;
 
   const statusLabel =
     trip.mode === "demo"
       ? "Offline demo mode"
-      : trip.mode === "live" || trip.mode === "live-stream"
+      : trip.mode === "live"
       ? "Live agent online"
       : trip.loading
       ? "Drafting briefing"
@@ -79,8 +53,6 @@ export default function App() {
 
   return (
     <>
-      <AtlasBackdrop parallax={parallax} thinking={isThinking} />
-
       <div className="app-shell">
         <header className="topbar">
           <Brand />
@@ -134,7 +106,6 @@ export default function App() {
               finalVerdict={trip.brief.final_verdict}
               counterfactual={trip.brief.counterfactual}
             />
-            <Postcards brief={trip.brief} />
             <TravelBriefMemo brief={trip.brief} />
           </>
         )}

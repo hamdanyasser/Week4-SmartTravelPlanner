@@ -16,13 +16,12 @@ interface EvidenceDrawerProps {
 
 function modeClass(mode: BriefMode | null): string {
   if (mode === "demo") return "demo";
-  if (mode === "live" || mode === "live-stream") return "live";
+  if (mode === "live") return "live";
   return "idle";
 }
 
 function modeLabel(mode: BriefMode | null): string {
   if (mode === "demo") return "Demo mode";
-  if (mode === "live-stream") return "Live · streaming";
   if (mode === "live") return "Live agent";
   return "Standing by";
 }
