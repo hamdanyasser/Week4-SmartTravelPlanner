@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AtlasBrief — Architecture Cinema</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink-900: #06080d;
+    --ink-800: #0d1219;
+    --ink-700: #141b25;
+    --ink-600: #1c2533;
+    --ink-500: #2a3445;
+    --line: #2c3645;
+    --paper: #F4ECD8;
+    --paper-dim: #c9bf9f;
+    --muted: #7c879a;
+    --muted-2: #4f5a6c;
+    --brass: #E0A458;
+    --brass-2: #f0c887;
+    --brass-deep: #6e4715;
+    --verdigris: #4DBDB1;
+    --verdigris-2: #80d6cb;
+    --verdigris-deep: #1a4d47;
+    --terracotta: #E27A5C;
+    --terracotta-2: #f0a386;
+    --terracotta-deep: #6b2a16;
+    --plum: #a07ec9;
+    --plum-deep: #3b2455;
+    --slate: #6f8bb6;
+    --slate-deep: #1f2c44;
+    --moss: #8FAE6E;
+    --rust: #C25842;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--ink-900); color: var(--paper); font-family: "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(224,164,88,.07), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(77,189,177,.06), transparent 60%),
+      var(--ink-900);
+  }
+  ::selection { background: var(--brass); color: var(--ink-900); }
+
+  /* ------------------------- Topbar ------------------------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    backdrop-filter: blur(14px);
+    background: rgba(6, 8, 13, 0.75);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .mark {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--brass-2) 0%, var(--brass) 50%, var(--brass-deep) 100%);
+    box-shadow: 0 0 24px rgba(224,164,88,.35), inset 0 0 0 1px rgba(255,255,255,.15);
+    position: relative;
+  }
+  .mark::after {
+    content: ""; position: absolute; inset: 6px; border-radius: 50%;
+    border: 1px solid rgba(244,236,216,.4);
+  }
+  .brand h1 { font-family: "Instrument Serif", serif; margin: 0; font-size: 22px; line-height: 1; letter-spacing: -0.3px; }
+  .brand h1 em { font-style: italic; color: var(--brass); }
+  .topbar .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; letter-spacing: 2px; color: var(--muted);
+    text-transform: uppercase;
+    padding-left: 18px; border-left: 1px solid var(--line); margin-left: 6px;
+  }
+  .topbar-spacer { flex: 1; }
+  .ctrl-row { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    border: 1px solid var(--line);
+    background: var(--ink-700);
+    color: var(--paper);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase;
+    padding: 9px 16px; border-radius: 999px; cursor: pointer;
+    transition: border-color .2s, background .2s, color .2s, transform .15s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn:hover { border-color: var(--brass); color: var(--brass-2); }
+  .btn:active { transform: scale(.98); }
+  .btn--primary {
+    background: linear-gradient(180deg, var(--brass-2), var(--brass));
+    color: var(--ink-900);
+    border-color: var(--brass-deep);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset, 0 8px 24px -8px rgba(224,164,88,.6);
+  }
+  .btn--primary:hover { color: var(--ink-900); border-color: var(--brass); }
+  .btn--ghost-v { color: var(--verdigris-2); border-color: rgba(77,189,177,.4); }
+  .btn--ghost-v:hover { color: var(--verdigris-2); border-color: var(--verdigris); }
+
+  /* ------------------------- Hero strip ------------------------- */
+  .hero {
+    padding: 36px 28px 20px;
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; align-items: end;
+  }
+  .hero h2 {
+    font-family: "Instrument Serif", serif; font-weight: 400;
+    font-size: 56px; line-height: 1.05; margin: 0; letter-spacing: -1px;
+  }
+  .hero h2 em { font-style: italic; color: var(--brass-2); }
+  .hero p { color: var(--muted); font-size: 14.5px; line-height: 1.6; margin: 14px 0 0; max-width: 56ch; }
+  .runline {
+    background: var(--ink-700); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .runline .lab { font-family: "JetBrains Mono", monospace; font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); }
+  .runline .q {
+    margin-top: 8px; font-family: "Instrument Serif", serif; font-style: italic;
+    font-size: 18px; line-height: 1.4; color: var(--paper);
+  }
+  .runline .meta {
+    margin-top: 14px; display: flex; gap: 18px; align-items: center;
+    font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted);
+  }
+  .meta-cell { display: flex; align-items: center; gap: 6px; }
+  .led { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 8px transparent; transition: background .3s, box-shadow .3s; }
+  .led.live { background: var(--moss); box-shadow: 0 0 10px var(--moss); }
+  .led.busy { background: var(--brass); box-shadow: 0 0 10px var(--brass); animation: pulse 1.2s ease-in-out infinite; }
+  .led.err  { background: var(--rust); box-shadow: 0 0 10px var(--rust); }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: .6; transform: scale(1.3); }
+  }
+
+  /* ------------------------- Stage ------------------------- */
+  .stage {
+    position: relative;
+    margin: 8px 28px 28px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    background:
+      radial-gradient(800px 500px at 50% 0%, rgba(224,164,88,.05), transparent 70%),
+      var(--ink-800);
+    aspect-ratio: 1440 / 880;
+  }
+  .stage svg { display: block; width: 100%; height: 100%; }
+
+  /* node visuals (foreignObject content uses these) */
+  .node {
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(28,37,51,.95), rgba(13,18,25,.95));
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: var(--paper);
+    font-family: "Inter", sans-serif;
+    box-shadow: 0 8px 24px -16px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02) inset;
+    transition: border-color .2s, box-shadow .25s, transform .25s, background .25s;
+    cursor: pointer;
+    height: 100%;
+    display: flex; flex-direction: column; gap: 4px; justify-content: center;
+  }
+  .node:hover { transform: translateY(-1px); }
+  .node .n-eyebrow { font-family: "JetBrains Mono", monospace; font-size: 9.5px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); }
+  .node .n-title { font-family: "Instrument Serif", serif; font-size: 17px; line-height: 1.15; }
+  .node .n-sub { font-size: 11.5px; color: var(--paper-dim); line-height: 1.35; }
+
+  .node.brass { border-color: rgba(224,164,88,.35); }
+  .node.brass.active, .node.brass:hover { border-color: var(--brass); box-shadow: 0 0 0 1px rgba(224,164,88,.3) inset, 0 0 32px -4px rgba(224,164,88,.45); }
+  .node.brass .n-title { color: var(--brass-2); }
+
+  .node.verd { border-color: rgba(77,189,177,.35); }
+  .node.verd.active, .node.verd:hover { border-color: var(--verdigris); box-shadow: 0 0 0 1px rgba(77,189,177,.3) inset, 0 0 32px -4px rgba(77,189,177,.45); }
+  .node.verd .n-title { color: var(--verdigris-2); }
+
+  .node.terra { border-color: rgba(226,122,92,.35); }
+  .node.terra.active, .node.terra:hover { border-color: var(--terracotta); box-shadow: 0 0 0 1px rgba(226,122,92,.3) inset, 0 0 32px -4px rgba(226,122,92,.45); }
+  .node.terra .n-title { color: var(--terracotta-2); }
+
+  .node.plum { border-color: rgba(160,126,201,.35); }
+  .node.plum.active, .node.plum:hover { border-color: var(--plum); box-shadow: 0 0 0 1px rgba(160,126,201,.3) inset, 0 0 32px -4px rgba(160,126,201,.45); }
+  .node.plum .n-title { color: #d3c0f0; }
+
+  .node.slate { border-color: rgba(111,139,182,.35); }
+  .node.slate.active, .node.slate:hover { border-color: var(--slate); box-shadow: 0 0 0 1px rgba(111,139,182,.3) inset, 0 0 32px -4px rgba(111,139,182,.45); }
+  .node.slate .n-title { color: #c5d3eb; }
+
+  .node.solid {
+    background: linear-gradient(180deg, var(--paper) 0%, #e6dcc1 100%);
+    color: var(--ink-900);
+  }
+  .node.solid .n-eyebrow { color: var(--muted-2); }
+  .node.solid .n-sub { color: var(--ink-700); }
+  .node.solid .n-title { color: var(--ink-900); font-weight: 500; }
+
+  /* SVG line styling */
+  .link {
+    fill: none;
+    stroke: rgba(124,135,154,.45);
+    stroke-width: 1.5;
+    transition: stroke .2s, stroke-width .2s;
+  }
+  .link.return { stroke-dasharray: 4 4; stroke: rgba(124,135,154,.3); }
+  .link.active {
+    stroke: var(--brass);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 6px rgba(224,164,88,.5));
+  }
+  .link.active.return {
+    stroke: var(--verdigris);
+    filter: drop-shadow(0 0 6px rgba(77,189,177,.5));
+  }
+  .pkt {
+    fill: var(--brass);
+    filter: drop-shadow(0 0 6px var(--brass));
+  }
+  .pkt.return { fill: var(--verdigris); filter: drop-shadow(0 0 6px var(--verdigris)); }
+
+  .badge {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase;
+    color: var(--muted); background: rgba(255,255,255,.04);
+    padding: 2px 6px; border-radius: 999px; border: 1px solid var(--line);
+    display: inline-block;
+  }
+
+  /* ------------------------- Bottom panels ------------------------- */
+  .panes {
+    display: grid; grid-template-columns: 1fr 1.1fr; gap: 22px;
+    padding: 0 28px 36px;
+  }
+  .panel {
+    background: var(--ink-800); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .panel h4 {
+    font-family: "JetBrains Mono", monospace; font-size: 10.5px; letter-spacing: 1.6px;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 10px;
+  }
+
+  /* Teletype */
+  .tty {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--paper-dim);
+    white-space: pre-wrap;
+    min-height: 140px;
+  }
+  .tty .ok { color: var(--moss); }
+  .tty .key { color: var(--brass-2); }
+  .tty .v { color: var(--verdigris-2); }
+  .tty .t { color: var(--terracotta-2); }
+  .tty .dim { color: var(--muted-2); }
+  .tty .caret { display: inline-block; width: 8px; height: 14px; background: var(--brass); margin-left: 2px; vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Decision board reveal */
+  .board {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity .4s ease, transform .4s ease;
+  }
+  .board.shown { opacity: 1; transform: translateY(0); }
+  .score {
+    border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+    background: linear-gradient(180deg, rgba(28,37,51,.6), rgba(13,18,25,.4));
+    position: relative; overflow: hidden;
+  }
+  .score .lbl { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); }
+  .score .num {
+    font-family: "Instrument Serif", serif; font-size: 56px; line-height: 1; margin: 6px 0 4px;
+    letter-spacing: -1.5px;
+  }
+  .score.brass { box-shadow: 0 0 0 1px rgba(224,164,88,.2) inset, 0 0 30px -8px rgba(224,164,88,.45); }
+  .score.brass .num { color: var(--brass-2); }
+  .score.verd  { box-shadow: 0 0 0 1px rgba(77,189,177,.2) inset, 0 0 30px -8px rgba(77,189,177,.45); }
+  .score.verd .num { color: var(--verdigris-2); }
+  .score .small { font-size: 11.5px; color: var(--paper-dim); margin-top: 6px; line-height: 1.5; }
+  .verdict {
+    grid-column: 1 / -1;
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; background: rgba(244,236,216,0.04);
+    position: relative;
+  }
+  .verdict::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+    background: linear-gradient(90deg, var(--brass), var(--terracotta), var(--verdigris));
+  }
+  .verdict .lbl { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); }
+  .verdict .q {
+    font-family: "Instrument Serif", serif; font-style: italic; font-size: 18px;
+    line-height: 1.5; color: var(--paper); margin-top: 6px;
+  }
+  .verdict .drop { font-size: 36px; line-height: .5; color: var(--brass-2); float: left; margin-right: 6px; padding-top: 14px; }
+  .counter {
+    grid-column: 1 / -1;
+    border: 1px dashed var(--line); border-radius: 12px;
+    padding: 12px 16px; color: var(--paper-dim); font-size: 12.5px;
+  }
+  .counter b { color: var(--terracotta-2); font-weight: 500; }
+
+  /* ------------------------- Side drawer ------------------------- */
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 460px;
+    background: var(--ink-800); border-left: 1px solid var(--line);
+    transform: translateX(100%); transition: transform .35s cubic-bezier(.4,0,.2,1);
+    z-index: 50; padding: 28px; overflow-y: auto;
+    box-shadow: -16px 0 40px -16px rgba(0,0,0,.6);
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer h3 { font-family: "Instrument Serif", serif; font-size: 28px; margin: 0 0 4px; color: var(--paper); }
+  .drawer .sub { color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 1.2px; }
+  .drawer .body { color: var(--paper-dim); line-height: 1.65; font-size: 13.5px; margin-top: 16px; }
+  .drawer .body code { font-family: "JetBrains Mono", monospace; font-size: 11.5px; background: var(--ink-700); padding: 2px 6px; border-radius: 4px; color: var(--brass-2); border: 1px solid var(--line); }
+  .drawer .files {
+    margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line);
+  }
+  .drawer .files h5 { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  .drawer .files a { display: block; font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: var(--verdigris-2); text-decoration: none; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+  .drawer .files a:hover { color: var(--verdigris); }
+  .drawer .close-x {
+    position: absolute; top: 18px; right: 18px;
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--ink-700);
+    color: var(--paper-dim); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .drawer .close-x:hover { color: var(--paper); border-color: var(--brass); }
+
+  /* ------------------------- Story narration ------------------------- */
+  .narration {
+    position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%);
+    width: min(900px, calc(100vw - 80px));
+    background: rgba(6,8,13,.92); backdrop-filter: blur(16px);
+    border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 22px;
+    color: var(--paper);
+    z-index: 40;
+    opacity: 0; transform: translate(-50%, 14px); pointer-events: none;
+    transition: opacity .4s ease, transform .4s ease;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,.7);
+  }
+  .narration.shown { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .narration .stage-label { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--muted); }
+  .narration .title { font-family: "Instrument Serif", serif; font-size: 22px; line-height: 1.2; margin: 4px 0 8px; }
+  .narration .copy { font-size: 13.5px; line-height: 1.6; color: var(--paper-dim); }
+  .narration .progress {
+    margin-top: 12px; height: 3px; background: var(--ink-700); border-radius: 999px; overflow: hidden;
+  }
+  .narration .progress > span { display: block; height: 100%; background: linear-gradient(90deg, var(--brass), var(--terracotta), var(--verdigris)); width: 0%; transition: width .3s linear; }
+  .narration .controls { display: flex; gap: 10px; margin-top: 12px; }
+
+  /* tooltip */
+  .tooltip {
+    position: fixed; pointer-events: none;
+    background: var(--ink-700); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 12px; font-size: 11.5px; color: var(--paper); max-width: 260px;
+    transform: translate(-50%, calc(-100% - 10px));
+    opacity: 0; transition: opacity .15s; z-index: 60;
+    line-height: 1.45;
+  }
+  .tooltip.shown { opacity: 1; }
+
+  .stage-status {
+    position: absolute; top: 14px; right: 16px;
+    font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 1.6px;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============= Topbar ============= -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div>
+        <h1>Atlas<em>Brief</em></h1>
+      </div>
+    </div>
+    <div class="eyebrow">Architecture · Cinema</div>
+    <div class="topbar-spacer"></div>
+    <div class="ctrl-row">
+      <button class="btn btn--ghost-v" id="btn-story">🎬 Story mode (3 min)</button>
+      <button class="btn" id="btn-reset">↺ Reset</button>
+      <button class="btn btn--primary" id="btn-run">▶ Run golden query</button>
+    </div>
+  </header>
+
+  <!-- ============= Hero strip ============= -->
+  <section class="hero">
+    <div>
+      <h2>One <em>fuzzy travel question</em>, three tools,<br/>one defended brief.</h2>
+      <p>
+        Click any layer to expand it. Hit <b>Run golden query</b> to fire the request
+        through every node in the live order — RAG retrieval, ML classification,
+        live conditions, two-model synthesis, persistence, webhook. The Decision
+        Tension Board renders at the end with the same numbers we measured on
+        the live Docker stack.
+      </p>
+    </div>
+    <div class="runline">
+      <div class="lab">Golden demo query</div>
+      <div class="q">
+        "I have two weeks off in July and around $1,500. I want somewhere warm,
+        not too touristy, and I like hiking. Where should I go, when should I book,
+        and what should I expect?"
+      </div>
+      <div class="meta">
+        <div class="meta-cell"><span class="led" id="led-status"></span><span id="status-text">Standing by</span></div>
+        <div class="meta-cell"><span class="badge">latency</span><span id="status-latency">—</span></div>
+        <div class="meta-cell"><span class="badge">cost</span><span id="status-cost">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= Stage (the SVG architecture) ============= -->
+  <section class="stage" id="stage">
+    <div class="stage-status"><span class="led" id="led-stage"></span><span id="stage-state">Ready</span></div>
+    <svg viewBox="0 0 1440 880" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(124,135,154,.55)"></path>
+        </marker>
+        <marker id="arrow-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--brass)"></path>
+        </marker>
+      </defs>
+
+      <!-- ===================== LINKS ===================== -->
+      <!-- user -> frontend -->
+      <path id="L-user-fe" class="link" d="M 200 70 L 200 130" marker-end="url(#arrow)"></path>
+      <!-- frontend -> backend -->
+      <path id="L-fe-api" class="link" d="M 200 220 L 200 290" marker-end="url(#arrow)"></path>
+      <!-- backend -> agent -->
+      <path id="L-api-agent" class="link" d="M 200 380 L 200 450" marker-end="url(#arrow)"></path>
+      <!-- agent fanout -->
+      <path id="L-agent-rag"  class="link" d="M 200 540 C 200 600, 360 600, 360 660" marker-end="url(#arrow)"></path>
+      <path id="L-agent-ml"   class="link" d="M 200 540 L 200 660" marker-end="url(#arrow)"></path>
+      <path id="L-agent-live" class="link" d="M 200 540 C 200 600, 40 600, 40 660" marker-end="url(#arrow)"></path>
+      <!-- tools -> infra -->
+      <path id="L-rag-pg"   class="link" d="M 360 750 C 360 790, 600 790, 600 540" marker-end="url(#arrow)"></path>
+      <path id="L-ml-job"   class="link" d="M 200 750 C 200 800, 540 800, 540 460" marker-end="url(#arrow)"></path>
+      <path id="L-live-om"  class="link" d="M 40  750 C 40  810, 480 810, 480 380" marker-end="url(#arrow)"></path>
+
+      <!-- agent -> synth (return path on the right) -->
+      <path id="L-tools-synth" class="link return" d="M 360 705 C 700 705, 800 540, 880 540" marker-end="url(#arrow)"></path>
+      <!-- synth -> strong llm -->
+      <path id="L-synth-llm" class="link" d="M 880 470 L 880 380" marker-end="url(#arrow)"></path>
+      <!-- llm -> persist -->
+      <path id="L-llm-pg" class="link return" d="M 980 340 C 1080 340, 1180 460, 1180 540" marker-end="url(#arrow)"></path>
+      <!-- llm -> webhook -->
+      <path id="L-llm-hook" class="link" d="M 980 340 C 1100 340, 1240 340, 1240 200" marker-end="url(#arrow)"></path>
+      <!-- llm -> langsmith -->
+      <path id="L-agent-ls" class="link return" d="M 290 495 L 1100 130" marker-end="url(#arrow)"></path>
+      <!-- llm -> response back to user -->
+      <path id="L-resp-back" class="link return" d="M 880 470 C 700 200, 400 100, 290 70" marker-end="url(#arrow)"></path>
+
+      <!-- ===================== NODES (foreignObject) ===================== -->
+
+      <!-- user -->
+      <foreignObject x="120" y="14" width="160" height="56">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node solid" data-id="user">
+          <div class="n-eyebrow">👤 User · browser</div>
+          <div class="n-title">Hassan / reviewer</div>
+        </div>
+      </foreignObject>
+
+      <!-- frontend -->
+      <foreignObject x="100" y="130" width="200" height="90">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node slate" data-id="frontend">
+          <div class="n-eyebrow">01 · frontend</div>
+          <div class="n-title">React + Vite</div>
+          <div class="n-sub">Auth pill · prompt console · timeline · evidence drawer</div>
+        </div>
+      </foreignObject>
+
+      <!-- backend -->
+      <foreignObject x="100" y="290" width="200" height="90">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node brass" data-id="backend">
+          <div class="n-eyebrow">02 · FastAPI</div>
+          <div class="n-title">POST /trip-briefs</div>
+          <div class="n-sub">async · DI · pydantic-settings · JWT optional</div>
+        </div>
+      </foreignObject>
+
+      <!-- agent -->
+      <foreignObject x="100" y="450" width="200" height="90">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node plum" data-id="agent">
+          <div class="n-eyebrow">03 · LangGraph agent</div>
+          <div class="n-title">plan ▸ tools ▸ synth</div>
+          <div class="n-sub">explicit allowlist · structured tool errors</div>
+        </div>
+      </foreignObject>
+
+      <!-- TOOLS row (live ▼ ml ▼ rag ▼) -->
+      <foreignObject x="-40" y="660" width="160" height="90">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node verd" data-id="live">
+          <div class="n-eyebrow">04c · tool</div>
+          <div class="n-title">🌤 fetch_live</div>
+          <div class="n-sub">async httpx · TTL 600s</div>
+        </div>
+      </foreignObject>
+      <foreignObject x="120" y="660" width="160" height="90">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node brass" data-id="ml">
+          <div class="n-eyebrow">04b · tool</div>
+          <div class="n-title">🧠 classify_style</div>
+          <div class="n-sub">scikit-learn · macro-F1 0.959</div>
+        </div>
+      </foreignObject>
+      <foreignObject x="280" y="660" width="160" height="90">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node plum" data-id="rag">
+          <div class="n-eyebrow">04a · tool</div>
+          <div class="n-title">📚 retrieve_kb</div>
+          <div class="n-sub">pgvector · cosine top-k</div>
+        </div>
+      </foreignObject>
+
+      <!-- joblib model -->
+      <foreignObject x="450" y="380" width="180" height="80">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node brass" data-id="joblib">
+          <div class="n-eyebrow">artifact</div>
+          <div class="n-title">model.joblib</div>
+          <div class="n-sub">loaded once · lifespan</div>
+        </div>
+      </foreignObject>
+
+      <!-- open-meteo -->
+      <foreignObject x="390" y="290" width="180" height="80">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node verd" data-id="om">
+          <div class="n-eyebrow">external</div>
+          <div class="n-title">Open-Meteo API</div>
+          <div class="n-sub">https://api.open-meteo.com</div>
+        </div>
+      </foreignObject>
+
+      <!-- pg + pgvector (right column) -->
+      <foreignObject x="520" y="540" width="220" height="120">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node verd" data-id="pg">
+          <div class="n-eyebrow">06 · persistence</div>
+          <div class="n-title">Postgres + pgvector</div>
+          <div class="n-sub">users · agent_runs · tool_calls · webhook_deliveries · destination_documents · document_chunks</div>
+        </div>
+      </foreignObject>
+
+      <!-- synthesizer -->
+      <foreignObject x="780" y="450" width="200" height="90">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node plum" data-id="synth">
+          <div class="n-eyebrow">05a · synthesizer</div>
+          <div class="n-title">Decision Tension Board</div>
+          <div class="n-sub">dream · reality · verdict · counterfactual</div>
+        </div>
+      </foreignObject>
+
+      <!-- two-model router / strong LLM -->
+      <foreignObject x="780" y="290" width="200" height="90">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node terra" data-id="llm">
+          <div class="n-eyebrow">05b · strong step</div>
+          <div class="n-title">Anthropic / OpenAI</div>
+          <div class="n-sub">Haiku · Sonnet · gpt-4o · real cost_usd</div>
+        </div>
+      </foreignObject>
+
+      <!-- LangSmith -->
+      <foreignObject x="1080" y="80" width="200" height="80">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node solid" data-id="ls">
+          <div class="n-eyebrow">observability</div>
+          <div class="n-title">LangSmith trace</div>
+          <div class="n-sub">when LANGCHAIN_API_KEY is set</div>
+        </div>
+      </foreignObject>
+
+      <!-- Discord webhook -->
+      <foreignObject x="1140" y="170" width="200" height="80">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="node terra" data-id="hook">
+          <div class="n-eyebrow">07 · webhook</div>
+          <div class="n-title">Discord (background)</div>
+          <div class="n-sub">timeout · retry · failure-isolated</div>
+        </div>
+      </foreignObject>
+
+      <!-- legend (bottom-left) -->
+      <foreignObject x="20" y="800" width="700" height="60">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.2px;color:#7c879a;text-transform:uppercase;">
+          <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:14px;height:6px;background:#E0A458;display:inline-block;border-radius:2px;"></span>&nbsp;outbound query</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:14px;height:0;border-top:2px dashed #4DBDB1;display:inline-block;"></span>&nbsp;return path</span>
+          <span>&nbsp;·&nbsp;tap any node for detail</span>
+        </div>
+      </foreignObject>
+    </svg>
+  </section>
+
+  <!-- ============= Bottom panes ============= -->
+  <section class="panes">
+    <div class="panel">
+      <h4>📟 Tool trace · live readout</h4>
+      <pre class="tty" id="tty"><span class="dim">$ POST /api/v1/trip-briefs
+{
+  "query": "two weeks in July, $1,500, warm hiking, less touristy"
+}
+
+Press <span class="key">▶ Run golden query</span> to fire the agent.</span><span class="caret"></span></pre>
+    </div>
+
+    <div class="panel">
+      <h4>🌟 Decision Tension Board · final reveal</h4>
+      <div class="board" id="board">
+        <div class="score brass">
+          <div class="lbl">Dream Fit · ML + RAG</div>
+          <div class="num" id="score-dream">—</div>
+          <div class="small" id="dream-rationale">Awaiting agent run.</div>
+        </div>
+        <div class="score verd">
+          <div class="lbl">Reality Pressure · live conditions</div>
+          <div class="num" id="score-reality">—</div>
+          <div class="small" id="reality-rationale">Awaiting agent run.</div>
+        </div>
+        <div class="verdict">
+          <div class="lbl">Final verdict — names the tradeoff</div>
+          <div class="q" id="verdict-text"><span class="drop">—</span>Run the golden query and the agent's verdict on Madeira vs. Costa Rica appears here.</div>
+        </div>
+        <div class="counter" id="counter-text">
+          <b>Why not the obvious pick?</b> · the counterfactual will appear after the run.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= Drawer ============= -->
+  <aside class="drawer" id="drawer">
+    <button class="close-x" id="drawer-close" aria-label="Close">✕</button>
+    <div class="sub" id="drawer-sub">DRAWER</div>
+    <h3 id="drawer-title">Title</h3>
+    <div class="body" id="drawer-body"></div>
+    <div class="files" id="drawer-files"></div>
+  </aside>
+
+  <!-- ============= Narration ============= -->
+  <div class="narration" id="narration">
+    <div class="stage-label" id="narr-eyebrow">SCENE 1 / 7</div>
+    <div class="title" id="narr-title">Frame</div>
+    <div class="copy" id="narr-copy">…</div>
+    <div class="progress"><span id="narr-progress"></span></div>
+    <div class="controls">
+      <button class="btn" id="narr-prev">◀ Prev</button>
+      <button class="btn" id="narr-next">Next ▶</button>
+      <button class="btn" id="narr-stop">✕ Exit story</button>
+    </div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+<script>
+/* =====================================================================
+   AtlasBrief Architecture Cinema
+   --------------------------------------------------------------------
+   Three modes:
+     1. Click-to-explore     — click any node for a detail drawer
+     2. Run golden query     — animated request flow + final brief reveal
+     3. Story mode (3 min)   — auto-narrated walkthrough synced to highlights
+   ===================================================================== */
+
+const NODE_DETAILS = {
+  user: {
+    sub: "01 · ENTRY",
+    title: "User · browser",
+    body: `The reviewer (Hassan) opens <code>http://localhost:5173</code>. The hero loads, the golden demo query is pre-filled, and the auth pill says <i>Browsing anonymously</i> — the demo path needs no login.`,
+    files: [],
+  },
+  frontend: {
+    sub: "01 · FRONTEND",
+    title: "React + Vite + TypeScript",
+    body: `Single-page briefing room. Reads top to bottom: hero · auth pill · cinematic prompt console · Trip DNA panel · agent timeline · Decision Tension Board · executive memo · evidence drawer. Falls back to an offline demo brief when the backend is unreachable.`,
+    files: [
+      ["frontend/src/App.tsx", "../frontend/src/App.tsx"],
+      ["frontend/src/components/DecisionTensionBoard.tsx", "../frontend/src/components/DecisionTensionBoard.tsx"],
+      ["frontend/src/hooks/useTripBrief.ts", "../frontend/src/hooks/useTripBrief.ts"],
+    ],
+  },
+  backend: {
+    sub: "02 · BACKEND",
+    title: "FastAPI · POST /api/v1/trip-briefs",
+    body: `One small endpoint runs the agent, persists the run, fires the webhook in the background. Auth is bcrypt + JWT but optional. Pydantic validates at every boundary. Async all the way down — <code>httpx.AsyncClient</code>, async SQLAlchemy 2.x, async LLM calls — so a single request never blocks the loop.`,
+    files: [
+      ["backend/app/main.py", "../backend/app/main.py"],
+      ["backend/app/api/routes/trip_briefs.py", "../backend/app/api/routes/trip_briefs.py"],
+      ["backend/app/config.py", "../backend/app/config.py"],
+    ],
+  },
+  agent: {
+    sub: "03 · AGENT",
+    title: "LangGraph · plan ▸ tools ▸ synth",
+    body: `Tiny graph with three nodes and a strict tool allowlist. The planner is a <b>deterministic ranker</b> over <code>data/destinations.csv</code> — no model hop for mechanical work. It picks the destination, the counterfactual, and the feature profile fed to the ML tool. Tool failures become structured errors so the LLM can reason about them.`,
+    files: [
+      ["backend/app/agent/graph.py", "../backend/app/agent/graph.py"],
+      ["backend/app/agent/registry.py · ALLOWED_TOOL_NAMES", "../backend/app/agent/registry.py"],
+      ["docs/PLANNER_VS_REACT.md", "PLANNER_VS_REACT.md"],
+    ],
+  },
+  rag: {
+    sub: "04A · TOOL",
+    title: "📚 retrieve_destination_knowledge",
+    body: `28 markdown briefs across 14 destinations chunked at 900 chars with 150 overlap. 384-dim deterministic-hashing embeddings stored in <b>Postgres + pgvector</b> with a cosine ivfflat index. DB-first; falls back to a deterministic local index if the DB is offline. Tool input + output are Pydantic-validated.`,
+    files: [
+      ["backend/app/tools/retrieve_destination_knowledge.py", "../backend/app/tools/retrieve_destination_knowledge.py"],
+      ["backend/app/rag/retriever.py", "../backend/app/rag/retriever.py"],
+      ["backend/app/rag/chunking.py", "../backend/app/rag/chunking.py"],
+    ],
+  },
+  ml: {
+    sub: "04B · TOOL",
+    title: "🧠 classify_travel_style",
+    body: `scikit-learn <code>Pipeline(StandardScaler → clf)</code> compared across LogReg, Random Forest, Gradient Boosting on stratified 5-fold CV. GridSearchCV tunes RF. Winner saved with <code>joblib</code> at mean macro-F1 <b>0.959</b>. Loaded <i>once</i> at FastAPI startup; deterministic rule fallback if the artifact fails to load.`,
+    files: [
+      ["backend/app/tools/classify_travel_style.py", "../backend/app/tools/classify_travel_style.py"],
+      ["backend/app/ml/train_classifier.py", "../backend/app/ml/train_classifier.py"],
+      ["data/destinations.csv (131 hand-labeled rows)", "../data/destinations.csv"],
+      ["backend/app/ml/results.csv", "../backend/app/ml/results.csv"],
+    ],
+  },
+  live: {
+    sub: "04C · TOOL",
+    title: "🌤 fetch_live_conditions",
+    body: `Async <b>Open-Meteo</b> lookup behind a <code>TTLCache</code> (600 s, single-flight stampede protection). Outputs a 0–100 reality-pressure score with weather + flight signals. Deterministic fallback when the API is disabled or unreachable, so the demo never breaks.`,
+    files: [
+      ["backend/app/tools/fetch_live_conditions.py", "../backend/app/tools/fetch_live_conditions.py"],
+      ["backend/app/cache/ttl.py", "../backend/app/cache/ttl.py"],
+    ],
+  },
+  joblib: {
+    sub: "ARTIFACT",
+    title: "model.joblib",
+    body: `Single binary holding the trained <code>Pipeline(StandardScaler → LogisticRegression)</code>. Loaded at startup via FastAPI lifespan and exposed through <code>Depends</code> — so a request handler never re-loads it. Tracked in git as a brief deliverable.`,
+    files: [
+      ["backend/app/ml/model.joblib", "../backend/app/ml/model.joblib"],
+      ["backend/app/ml/service.py", "../backend/app/ml/service.py"],
+    ],
+  },
+  om: {
+    sub: "EXTERNAL",
+    title: "Open-Meteo · /v1/forecast",
+    body: `Free, keyless weather API hit through <code>httpx.AsyncClient</code> with a 4-second timeout. We never fail closed: when disabled (<code>WEATHER_LIVE_ENABLED=false</code>) or unreachable, the deterministic fallback kicks in.`,
+    files: [],
+  },
+  synth: {
+    sub: "05A · SYNTHESIZER",
+    title: "Decision Tension Board",
+    body: `Combines the three tool outputs into the locked <code>TripBriefResponse</code> contract. <b>Dream Fit</b> = ML confidence + RAG hit count + matched traits + style alignment. <b>Reality Pressure</b> = live-conditions score (inverted: 100 = no pressure). <b>Final Verdict</b> names the tradeoff. <b>Why not the obvious pick?</b> rejects the mainstream alternative.`,
+    files: [
+      ["backend/app/agent/synthesize.py", "../backend/app/agent/synthesize.py"],
+      ["backend/app/schemas/trip_brief.py", "../backend/app/schemas/trip_brief.py"],
+    ],
+  },
+  llm: {
+    sub: "05B · TWO-MODEL ROUTING",
+    title: "Cheap (deterministic) · Strong (Anthropic / OpenAI)",
+    body: `<b>Cheap step</b> is a deterministic ranker — fast, free, fully explainable. <b>Strong step</b> calls real Anthropic Haiku/Sonnet (or OpenAI <code>gpt-4o</code>) when a key is set; falls back to a deterministic verdict otherwise. Real <code>tokens_in</code>, <code>tokens_out</code>, and <code>cost_usd</code> logged per request. <b>Live-measured: $0.001361</b> for the golden query on Haiku.`,
+    files: [
+      ["backend/app/llm/router.py", "../backend/app/llm/router.py"],
+      ["backend/app/llm/providers.py · PRICE_TABLE_PER_MTOKENS", "../backend/app/llm/providers.py"],
+    ],
+  },
+  pg: {
+    sub: "06 · PERSISTENCE",
+    title: "Postgres 16 + pgvector",
+    body: `Six tables, all created from a single hand-authored Alembic migration that enables <code>CREATE EXTENSION vector</code> first. The <code>pgdata</code> named volume keeps embeddings, runs, and webhook history across container restarts. <code>document_chunks</code> uses <code>Vector(384)</code> with a cosine ivfflat index for sub-millisecond retrieval.`,
+    files: [
+      ["backend/alembic/versions/0001_initial.py", "../backend/alembic/versions/0001_initial.py"],
+      ["backend/app/db/session.py", "../backend/app/db/session.py"],
+      ["backend/app/models/document_chunk.py", "../backend/app/models/document_chunk.py"],
+      ["backend/app/models/agent_run.py", "../backend/app/models/agent_run.py"],
+    ],
+  },
+  ls: {
+    sub: "OBSERVABILITY",
+    title: "LangSmith · live trace",
+    body: `When <code>LANGCHAIN_API_KEY</code> is set in <code>.env</code>, every agent run is automatically traced. The captured run URL — preserved in <code>CODE_REVIEW_NOTES.md</code> — exposes inputs, outputs, and every tool I/O for the brief item 12.6 deliverable.`,
+    files: [
+      ["backend/app/tracing.py", "../backend/app/tracing.py"],
+      ["CODE_REVIEW_NOTES.md", "../CODE_REVIEW_NOTES.md"],
+    ],
+  },
+  hook: {
+    sub: "07 · WEBHOOK",
+    title: "Discord (background task)",
+    body: `Fires <i>after</i> the user response is sent. Async <code>httpx</code> POST with timeout, 3 attempts, exponential backoff, and structured logging. Webhook failure is intentionally <b>isolated</b> — the user-facing brief is never affected. Verified live: <code>status_code: 204</code> on 2026-05-01.`,
+    files: [
+      ["backend/app/webhooks/dispatcher.py", "../backend/app/webhooks/dispatcher.py"],
+      ["tests/test_webhook.py", "../tests/test_webhook.py"],
+    ],
+  },
+};
+
+/* ----------------------- Tooltip + drawer ----------------------- */
+const tt = document.getElementById("tooltip");
+const drawer = document.getElementById("drawer");
+const drawerSub = document.getElementById("drawer-sub");
+const drawerTitle = document.getElementById("drawer-title");
+const drawerBody = document.getElementById("drawer-body");
+const drawerFiles = document.getElementById("drawer-files");
+
+function showTooltip(node, e) {
+  const id = node.dataset.id;
+  const d = NODE_DETAILS[id];
+  if (!d) return;
+  tt.innerHTML = `<b style="color:#F4ECD8">${d.title.replace(/&/g, '&amp;')}</b><br/><span style="color:#7c879a">${d.sub}</span>`;
+  tt.style.left = e.clientX + "px";
+  tt.style.top = e.clientY + "px";
+  tt.classList.add("shown");
+}
+function hideTooltip() { tt.classList.remove("shown"); }
+
+function openDrawer(id) {
+  const d = NODE_DETAILS[id];
+  if (!d) return;
+  drawerSub.textContent = d.sub;
+  drawerTitle.textContent = d.title;
+  drawerBody.innerHTML = d.body;
+  if (d.files && d.files.length) {
+    drawerFiles.innerHTML = "<h5>Files</h5>" + d.files.map(f => `<a href="${f[1]}" target="_blank" rel="noopener">${f[0]}</a>`).join("");
+  } else {
+    drawerFiles.innerHTML = "";
+  }
+  drawer.classList.add("open");
+}
+document.getElementById("drawer-close").addEventListener("click", () => drawer.classList.remove("open"));
+
+document.querySelectorAll(".node").forEach(n => {
+  n.addEventListener("mouseenter", e => showTooltip(n, e));
+  n.addEventListener("mousemove", e => { tt.style.left = e.clientX + "px"; tt.style.top = e.clientY + "px"; });
+  n.addEventListener("mouseleave", hideTooltip);
+  n.addEventListener("click", () => openDrawer(n.dataset.id));
+});
+
+/* ----------------------- Helpers ----------------------- */
+const $ = (sel) => document.querySelector(sel);
+const ledStatus = $("#led-status");
+const ledStage = $("#led-stage");
+const statusText = $("#status-text");
+const stageState = $("#stage-state");
+const ttyEl = $("#tty");
+
+function setStatus(label, kind = null, latency, cost) {
+  statusText.textContent = label;
+  ledStatus.className = "led" + (kind ? " " + kind : "");
+  ledStage.className = "led" + (kind ? " " + kind : "");
+  stageState.textContent = label;
+  if (latency !== undefined) $("#status-latency").textContent = latency;
+  if (cost !== undefined) $("#status-cost").textContent = cost;
+}
+
+function activate(id, on = true) {
+  const node = document.querySelector(`.node[data-id="${id}"]`);
+  if (node) node.classList.toggle("active", on);
+}
+function activateLink(id, returnPath = false, on = true) {
+  const link = document.getElementById(id);
+  if (!link) return;
+  link.classList.toggle("active", on);
+  if (returnPath) link.classList.toggle("return", true);
+}
+function clearAll() {
+  document.querySelectorAll(".node").forEach(n => n.classList.remove("active"));
+  document.querySelectorAll(".link").forEach(l => l.classList.remove("active"));
+  document.querySelectorAll(".pkt-anim").forEach(el => el.remove());
+  $("#board").classList.remove("shown");
+  $("#score-dream").textContent = "—";
+  $("#score-reality").textContent = "—";
+  $("#dream-rationale").textContent = "Awaiting agent run.";
+  $("#reality-rationale").textContent = "Awaiting agent run.";
+  $("#verdict-text").innerHTML = `<span class="drop">—</span>Run the golden query and the agent's verdict on Madeira vs. Costa Rica appears here.`;
+  $("#counter-text").innerHTML = `<b>Why not the obvious pick?</b> · the counterfactual will appear after the run.`;
+  ttyEl.innerHTML = `<span class="dim">$ POST /api/v1/trip-briefs
+{
+  "query": "two weeks in July, $1,500, warm hiking, less touristy"
+}
+
+Press <span class="key">▶ Run golden query</span> to fire the agent.</span><span class="caret"></span>`;
+  setStatus("Standing by", null, "—", "—");
+}
+
+/* ----------------------- Animated packet ----------------------- */
+function firePacket(linkId, durationMs = 700, returnPath = false) {
+  return new Promise(resolve => {
+    const link = document.getElementById(linkId);
+    if (!link) return resolve();
+    const length = link.getTotalLength();
+    const ns = "http://www.w3.org/2000/svg";
+    const c = document.createElementNS(ns, "circle");
+    c.setAttribute("r", "4.5");
+    c.setAttribute("class", "pkt-anim pkt" + (returnPath ? " return" : ""));
+    c.setAttribute("fill", returnPath ? "var(--verdigris)" : "var(--brass)");
+    c.setAttribute("filter", `drop-shadow(0 0 8px ${returnPath ? "var(--verdigris)" : "var(--brass)"})`);
+    link.parentNode.appendChild(c);
+
+    const animMotion = document.createElementNS(ns, "animateMotion");
+    animMotion.setAttribute("dur", durationMs + "ms");
+    animMotion.setAttribute("fill", "freeze");
+    animMotion.setAttribute("rotate", "auto");
+    animMotion.setAttribute("repeatCount", "1");
+    const path = document.createElementNS(ns, "mpath");
+    path.setAttribute("href", "#" + linkId);
+    animMotion.appendChild(path);
+    c.appendChild(animMotion);
+    animMotion.beginElement();
+
+    setTimeout(() => {
+      c.remove();
+      resolve();
+    }, durationMs);
+  });
+}
+
+/* ----------------------- TTY teletype ----------------------- */
+async function tty(html, delay = 18) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  const tokens = [];
+  // Walk: text nodes get spelled, element nodes are flushed whole (so colored spans appear correctly)
+  function walk(n) {
+    if (n.nodeType === 3) {
+      n.textContent.split("").forEach(ch => tokens.push({ kind: "text", ch }));
+    } else if (n.nodeType === 1) {
+      const open = "<" + n.tagName.toLowerCase() + (n.className ? ` class="${n.className}"` : "") + ">";
+      tokens.push({ kind: "raw", str: open });
+      Array.from(n.childNodes).forEach(walk);
+      tokens.push({ kind: "raw", str: "</" + n.tagName.toLowerCase() + ">" });
+    }
+  }
+  Array.from(tmp.childNodes).forEach(walk);
+
+  ttyEl.innerHTML = ""; // clear
+  let buffer = "";
+  for (const t of tokens) {
+    if (t.kind === "raw") buffer += t.str;
+    else buffer += t.ch;
+    ttyEl.innerHTML = buffer + '<span class="caret"></span>';
+    if (t.kind === "text") await new Promise(r => setTimeout(r, delay));
+  }
+}
+
+/* ----------------------- Decision board reveal ----------------------- */
+async function revealBoard(data) {
+  const b = $("#board");
+  b.classList.add("shown");
+  await animateNumber("#score-dream", 0, data.dream, 900);
+  $("#dream-rationale").textContent = data.dreamRationale;
+  await animateNumber("#score-reality", 0, data.reality, 900);
+  $("#reality-rationale").textContent = data.realityRationale;
+  $("#verdict-text").innerHTML = `<span class="drop">${data.verdict.charAt(0)}</span>${data.verdict.slice(1)}`;
+  $("#counter-text").innerHTML = `<b>Why not the obvious pick?</b> ${data.counterfactual}`;
+}
+function animateNumber(sel, from, to, dur) {
+  return new Promise(resolve => {
+    const el = $(sel);
+    const start = performance.now();
+    function tick(t) {
+      const p = Math.min(1, (t - start) / dur);
+      const ease = 1 - Math.pow(1 - p, 3);
+      el.textContent = (from + (to - from) * ease).toFixed(0);
+      if (p < 1) requestAnimationFrame(tick);
+      else resolve();
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+/* ----------------------- Run scenario ----------------------- */
+const GOLDEN_BRIEF = {
+  dream: 84, reality: 74,
+  dreamRationale: "Predicted Adventure (joblib · 0.93). RAG matched 2 chunks via pgvector — top: Madeira (Budget and Booking Timing). Traits matched: warm, less-touristy, hiking.",
+  realityRationale: "Pressure 74/100 (deterministic). July weather typically stable: warm, dry, hiking-friendly. Flight pressure moderate; book ≥ 6 weeks ahead.",
+  verdict: "Madeira hits your dream profile — warm, less-touristy hiking heaven with stable July weather and budget-friendly guesthouses — but the reality bite is trailhead access. Most rewarding hikes need a rental car or tour, eating $200-400 of your $1,500.",
+  counterfactual: "Most travelers would have guessed <b>Costa Rica</b> (Monteverde) for warm hiking. We passed because July is green-season — sustained rain on cloud-forest trails kills the day-to-day usability of the budget."
+};
+
+async function runScenario() {
+  clearAll();
+  setStatus("Resolving query…", "busy", "—", "—");
+
+  // 1. user → frontend
+  await fadeIn("user", "frontend", "L-user-fe");
+  await tty(`<span class="dim">$ POST /api/v1/trip-briefs</span>
+<span class="dim">→ Frontend submitted query (anonymous, JWT optional)</span>
+`);
+
+  // 2. frontend → backend
+  await fadeIn(null, "backend", "L-fe-api", 600);
+  await tty(`<span class="dim">$ POST /api/v1/trip-briefs</span>
+<span class="ok">[backend.recv]</span> trip_brief.received <span class="dim">user_id=null</span>
+`);
+
+  // 3. backend → agent
+  await fadeIn(null, "agent", "L-api-agent", 500);
+  await tty(`<span class="dim">$ POST /api/v1/trip-briefs</span>
+<span class="ok">[backend.recv]</span> trip_brief.received <span class="dim">user_id=null</span>
+<span class="ok">[agent.plan]</span> deterministic ranker → <span class="key">Madeira (PT)</span> · counterfactual <span class="key">Monteverde</span>
+`);
+
+  setStatus("Calling tools…", "busy");
+
+  // 4. agent → tools (fanout)
+  await Promise.all([
+    fadeIn(null, "rag",  "L-agent-rag",  700).then(() => firePacket("L-rag-pg", 600)).then(() => activate("pg", true)),
+    fadeIn(null, "ml",   "L-agent-ml",   700).then(() => firePacket("L-ml-job", 500)).then(() => activate("joblib", true)),
+    fadeIn(null, "live", "L-agent-live", 700).then(() => firePacket("L-live-om", 600)).then(() => activate("om", true)),
+  ]);
+
+  await tty(`<span class="dim">$ POST /api/v1/trip-briefs</span>
+<span class="ok">[backend.recv]</span> trip_brief.received <span class="dim">user_id=null</span>
+<span class="ok">[agent.plan]</span> deterministic ranker → <span class="key">Madeira (PT)</span> · counterfactual <span class="key">Monteverde</span>
+<span class="v">[tool.retrieve_destination_knowledge]</span> 2 chunks via pgvector; top: Madeira (Madeira Budget and Booking Timing)
+<span class="key">[tool.classify_travel_style]</span> Predicted <span class="key">Adventure</span> (joblib · confidence 0.93)
+<span class="v">[tool.fetch_live_conditions]</span> Pressure 74/100 · stable July warmth · book ≥ 6w
+`);
+
+  // 5. tools → synth
+  setStatus("Synthesizing…", "busy");
+  await firePacket("L-tools-synth", 800, true);
+  activate("synth", true);
+
+  // 6. synth → strong llm
+  await firePacket("L-synth-llm", 600);
+  activate("llm", true);
+  await tty(`<span class="dim">$ POST /api/v1/trip-briefs</span>
+<span class="ok">[backend.recv]</span> trip_brief.received <span class="dim">user_id=null</span>
+<span class="ok">[agent.plan]</span> deterministic ranker → <span class="key">Madeira (PT)</span> · counterfactual <span class="key">Monteverde</span>
+<span class="v">[tool.retrieve_destination_knowledge]</span> 2 chunks via pgvector; top: Madeira
+<span class="key">[tool.classify_travel_style]</span> Predicted Adventure · confidence 0.93
+<span class="v">[tool.fetch_live_conditions]</span> Pressure 74/100 · stable July warmth
+<span class="t">[llm.strong.ok]</span> claude-haiku-4-5  tokens_in=383  tokens_out=242  <span class="t">cost_usd=0.001361</span>
+`);
+
+  // 7. llm → persist + webhook + langsmith + back to user
+  setStatus("Persisting + webhook…", "busy");
+  firePacket("L-agent-ls", 900, true);
+  activate("ls", true);
+  await Promise.all([
+    firePacket("L-llm-pg", 700, true),
+    firePacket("L-llm-hook", 800),
+  ]);
+  activate("hook", true);
+
+  await firePacket("L-resp-back", 1100, true);
+
+  setStatus("Live · 224 ms · $0.001361", "live", "224 ms", "$0.001361");
+
+  await tty(`<span class="dim">$ POST /api/v1/trip-briefs</span>
+<span class="ok">[backend.recv]</span> trip_brief.received <span class="dim">user_id=null</span>
+<span class="ok">[agent.plan]</span> deterministic ranker → <span class="key">Madeira (PT)</span> · counterfactual <span class="key">Monteverde</span>
+<span class="v">[tool.retrieve_destination_knowledge]</span> 2 chunks via pgvector; top: Madeira
+<span class="key">[tool.classify_travel_style]</span> Predicted Adventure · confidence 0.93
+<span class="v">[tool.fetch_live_conditions]</span> Pressure 74/100 · stable July warmth
+<span class="t">[llm.strong.ok]</span> claude-haiku-4-5  tokens_in=383  tokens_out=242  <span class="t">cost_usd=0.001361</span>
+<span class="ok">[persist.agent_run.ok]</span> id=42 latency_ms=224
+<span class="t">[webhook.delivered]</span> Discord  attempts=1  status_code=204
+<span class="ok">← 200 OK</span> <span class="dim">→ frontend renders Decision Tension Board</span>
+`);
+
+  // 8. final reveal
+  await new Promise(r => setTimeout(r, 200));
+  await revealBoard(GOLDEN_BRIEF);
+}
+
+async function fadeIn(prevId, nextId, linkId, packetMs = 600) {
+  if (prevId) activate(prevId, true);
+  if (linkId) {
+    activateLink(linkId, false, true);
+    await firePacket(linkId, packetMs);
+  }
+  if (nextId) activate(nextId, true);
+}
+
+document.getElementById("btn-run").addEventListener("click", runScenario);
+document.getElementById("btn-reset").addEventListener("click", clearAll);
+
+/* ============================================================
+   STORY MODE — auto-narrated 3-min walkthrough
+   ============================================================ */
+const STORY = [
+  {
+    label: "Scene 1 / 7",
+    title: "Frame — what AtlasBrief actually does",
+    copy: "AtlasBrief takes a fuzzy travel question and returns a defended recommendation. The signature output is the Decision Tension Board: Dream Fit, Reality Pressure, Final Verdict, Counterfactual. One query in, one tradeoff named.",
+    duration: 22000,
+    highlight: ["user", "frontend"],
+    highlightLinks: ["L-user-fe"],
+  },
+  {
+    label: "Scene 2 / 7",
+    title: "Frontend → backend",
+    copy: "The user lands on a React + Vite single-page briefing room and submits one query. It hits a single FastAPI endpoint. Auth is bcrypt + JWT but optional — the demo path stays anonymous. Everything is async — no requests.get, no time.sleep in the request path. Pydantic validates at every boundary.",
+    duration: 30000,
+    highlight: ["frontend", "backend"],
+    highlightLinks: ["L-fe-api"],
+  },
+  {
+    label: "Scene 3 / 7",
+    title: "The agent — planner-then-executor",
+    copy: "A small LangGraph agent: plan, tools, synthesize. The planner is a deterministic ranker over our 131-row destinations CSV — no model hop for mechanical work. It picks the destination, the counterfactual, and the feature profile. Three tools fire, exactly the three the brief asks for, behind an explicit allowlist.",
+    duration: 30000,
+    highlight: ["agent"],
+    highlightLinks: ["L-api-agent"],
+  },
+  {
+    label: "Scene 4 / 7",
+    title: "Three tools — RAG · ML · Live",
+    copy: "RAG retrieves from 28 markdown briefs across 14 destinations, embeddings stored in Postgres + pgvector with a cosine ivfflat index. ML classifier is a scikit-learn pipeline — StandardScaler plus Logistic Regression, mean macro-F1 0.959 on stratified 5-fold CV — loaded once at startup via FastAPI lifespan. Live conditions is an async Open-Meteo lookup behind a TTL cache with stampede protection. Tool failures become structured errors.",
+    duration: 38000,
+    highlight: ["agent", "rag", "ml", "live", "pg", "joblib", "om"],
+    highlightLinks: ["L-agent-rag", "L-agent-ml", "L-agent-live", "L-rag-pg", "L-ml-job", "L-live-om"],
+  },
+  {
+    label: "Scene 5 / 7",
+    title: "Two-model routing + LangSmith",
+    copy: "Cheap step is deterministic. Strong step calls real Anthropic Haiku or Sonnet — or OpenAI — when a key is set; falls back to a deterministic verdict otherwise. We log real tokens_in, tokens_out, and cost_usd per request. Live-measured with Haiku: $0.001361 per query. LangSmith captures the full multi-tool trace when the key is set.",
+    duration: 32000,
+    highlight: ["synth", "llm", "ls"],
+    highlightLinks: ["L-tools-synth", "L-synth-llm", "L-agent-ls"],
+  },
+  {
+    label: "Scene 6 / 7",
+    title: "Persistence + webhook — failure isolated",
+    copy: "Six tables in Postgres, async SQLAlchemy 2.x, schema versioned with Alembic that enables pgvector before creating the chunk table. The pgdata named volume keeps embeddings and history across restarts. After the response is sent, a background task fires a Discord webhook with timeout, retry, and backoff. Webhook failure never breaks the user response.",
+    duration: 30000,
+    highlight: ["pg", "hook"],
+    highlightLinks: ["L-llm-pg", "L-llm-hook"],
+  },
+  {
+    label: "Scene 7 / 7",
+    title: "Decision Tension Board",
+    copy: "Madeira at 84 Dream / 74 Reality. The verdict names the warm-hiking dream and the trailhead-access reality bite. The counterfactual rejects Costa Rica because July is green-season. One Docker command brings the whole stack up. CI runs ruff plus 58 pytest tests on every push.",
+    duration: 28000,
+    highlight: ["synth"],
+    highlightLinks: [],
+    finalReveal: true,
+  },
+];
+
+const narrEl = document.getElementById("narration");
+let storyIdx = 0;
+let storyTimer = null;
+let progressTimer = null;
+let storyPlaying = false;
+
+function applyHighlights(scene) {
+  // dim everything, then activate listed
+  document.querySelectorAll(".node").forEach(n => n.classList.remove("active"));
+  document.querySelectorAll(".link").forEach(l => l.classList.remove("active"));
+  (scene.highlight || []).forEach(id => activate(id, true));
+  (scene.highlightLinks || []).forEach(id => activateLink(id, false, true));
+}
+function showScene(idx) {
+  if (idx < 0 || idx >= STORY.length) return;
+  storyIdx = idx;
+  const s = STORY[idx];
+  $("#narr-eyebrow").textContent = s.label;
+  $("#narr-title").textContent = s.title;
+  $("#narr-copy").textContent = s.copy;
+  applyHighlights(s);
+
+  if (s.finalReveal) {
+    revealBoard(GOLDEN_BRIEF);
+  }
+
+  // progress bar
+  const p = $("#narr-progress");
+  p.style.width = "0%";
+  clearInterval(progressTimer);
+  const start = performance.now();
+  progressTimer = setInterval(() => {
+    const t = (performance.now() - start) / s.duration * 100;
+    p.style.width = Math.min(100, t) + "%";
+    if (t >= 100) clearInterval(progressTimer);
+  }, 100);
+
+  // schedule next
+  clearTimeout(storyTimer);
+  if (storyPlaying) {
+    storyTimer = setTimeout(() => {
+      if (idx + 1 < STORY.length) showScene(idx + 1);
+      else stopStory();
+    }, s.duration);
+  }
+}
+function startStory() {
+  storyPlaying = true;
+  clearAll();
+  narrEl.classList.add("shown");
+  showScene(0);
+}
+function stopStory() {
+  storyPlaying = false;
+  narrEl.classList.remove("shown");
+  clearTimeout(storyTimer);
+  clearInterval(progressTimer);
+}
+document.getElementById("btn-story").addEventListener("click", startStory);
+document.getElementById("narr-stop").addEventListener("click", stopStory);
+document.getElementById("narr-prev").addEventListener("click", () => { if (storyIdx > 0) showScene(storyIdx - 1); });
+document.getElementById("narr-next").addEventListener("click", () => { if (storyIdx + 1 < STORY.length) showScene(storyIdx + 1); else stopStory(); });
+
+/* keyboard shortcuts */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    drawer.classList.remove("open");
+    if (storyPlaying) stopStory();
+  }
+  if (e.key === " " && !storyPlaying) {
+    e.preventDefault();
+    runScenario();
+  }
+});
+</script>
+</body>
+</html>
