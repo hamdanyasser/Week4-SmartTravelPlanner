@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AtlasBrief — Architecture</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #0e1116;
+    --ink-soft: #1a1f29;
+    --paper: #f7f2e6;
+    --paper-2: #efe7d2;
+    --line: #2a323f;
+    --muted: #6c7588;
+    --brass: #c98a3b;
+    --brass-soft: #f4dfb6;
+    --verdigris: #2f8b80;
+    --verdigris-soft: #c2e6e1;
+    --terracotta: #c25a3f;
+    --terracotta-soft: #f4cdbf;
+    --plum: #6b4a8a;
+    --plum-soft: #ddd0ee;
+    --slate: #2d3a52;
+    --slate-soft: #d5dded;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
+    color: var(--ink);
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 64px 64px;
+  }
+
+  .frame {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Header ---------- */
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 22px;
+    margin-bottom: 36px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .brand-mark {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #f3c777 0%, var(--brass) 60%, #6b4516 100%);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.15);
+    position: relative;
+  }
+  .brand-mark::after {
+    content: "";
+    position: absolute; inset: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.6);
+  }
+  .brand h1 {
+    font-family: "Instrument Serif", serif;
+    margin: 0; font-size: 34px; line-height: 1; letter-spacing: -0.5px;
+  }
+  .brand h1 em { font-style: italic; color: var(--brass); }
+  .head-meta {
+    text-align: right;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .head-meta b { color: var(--ink); display: block; font-size: 13px; letter-spacing: 1.6px; margin-bottom: 4px; }
+
+  /* ---------- Layers / cards ---------- */
+  .stack { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 12px 28px -18px rgba(0,0,0,.25);
+    width: 100%;
+    overflow: hidden;
+  }
+  .card.row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
+  .card.row .col { padding: 22px 24px; border-right: 1px solid var(--line); }
+  .card.row .col:last-child { border-right: 0; }
+
+  .card-pad { padding: 22px 28px; }
+  .card-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 6px;
+  }
+  .card-title .label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: 1.7px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .card-title h3 {
+    font-family: "Instrument Serif", serif;
+    font-weight: 400;
+    font-size: 22px;
+    margin: 4px 0 0;
+    letter-spacing: -0.2px;
+  }
+  .card .lead {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #38404f;
+    margin: 8px 0 12px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+  .chip {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: .5px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--paper-2);
+    border: 1px solid #d8c9a7;
+    color: #5a4a25;
+  }
+  .chip.v { background: var(--verdigris-soft); border-color: #9bd1c8; color: #1c5852; }
+  .chip.t { background: var(--terracotta-soft); border-color: #e9b09a; color: #7a311c; }
+  .chip.p { background: var(--plum-soft); border-color: #c3aedc; color: #4d3367; }
+  .chip.s { background: var(--slate-soft); border-color: #b3c1dd; color: #2a3a59; }
+  .chip.b { background: var(--brass-soft); border-color: #e2c789; color: #714e16; }
+
+  /* layer accent (left strip) */
+  .accent { border-left: 4px solid var(--ink); }
+  .accent-brass { border-left-color: var(--brass); }
+  .accent-verd  { border-left-color: var(--verdigris); }
+  .accent-terra { border-left-color: var(--terracotta); }
+  .accent-plum  { border-left-color: var(--plum); }
+  .accent-slate { border-left-color: var(--slate); }
+
+  /* numbered eyebrow */
+  .num {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: 1.7px; text-transform: uppercase; color: var(--muted);
+  }
+  .num .dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1px solid var(--line);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--ink); background: var(--paper);
+  }
+
+  /* arrow between layers */
+  .arrow {
+    width: 2px;
+    height: 28px;
+    background: linear-gradient(180deg, var(--line) 0%, var(--line) 100%);
+    position: relative;
+  }
+  .arrow::after {
+    content: "";
+    position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--line);
+  }
+
+  /* fan-out arrows for the 3-tool row */
+  .fanout {
+    width: 100%;
+    height: 56px;
+    position: relative;
+  }
+  .fanout svg { width: 100%; height: 100%; }
+
+  /* tools */
+  .tool {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .tool-h {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tool-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 1px 2px rgba(0,0,0,.18);
+  }
+  .tool-icon.b { background: linear-gradient(180deg, #e0a458, #b07628); }
+  .tool-icon.v { background: linear-gradient(180deg, #4dbdb1, #1f786e); }
+  .tool-icon.t { background: linear-gradient(180deg, #e27a5c, #a33e22); }
+  .tool-icon.p { background: linear-gradient(180deg, #8b6cb0, #4f2e7d); }
+  .tool-icon.s { background: linear-gradient(180deg, #4f6285, #28344d); }
+  .tool-name { font-family: "Instrument Serif", serif; font-size: 19px; line-height: 1; }
+  .tool-fn   { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted); }
+  .tool-body {
+    font-size: 12.5px; line-height: 1.55; color: #38404f;
+  }
+  .tool-meta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: .5px; color: #1c5852;
+    margin-top: 6px;
+  }
+
+  /* persistence row of pills */
+  .tables {
+    display: flex; flex-wrap: wrap; gap: 8px 10px;
+  }
+  .table-pill {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; padding: 6px 10px; border-radius: 6px;
+    background: #1a1f29; color: #f5e9c8; letter-spacing: .4px;
+    border: 1px solid #2a323f;
+  }
+  .table-pill.vector { background: #1c3a36; color: #c2e6e1; border-color: #275048; }
+
+  /* webhook strip */
+  .webhook {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .webhook .col { padding: 22px 26px; }
+  .webhook .col + .col { border-left: 1px solid var(--line); }
+
+  /* legend */
+  .legend {
+    margin-top: 32px;
+    border-top: 1px dashed var(--line);
+    padding-top: 22px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 28px;
+  }
+  .legend h4 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: 1.7px; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 10px;
+  }
+  .legend-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+  .swatch { width: 18px; height: 18px; border-radius: 5px; border: 1px solid rgba(0,0,0,.1); }
+  .legend p { margin: 6px 0; font-size: 12.5px; line-height: 1.55; color: #38404f; }
+
+  /* small caption right of agent box */
+  .row-with-aside {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 18px;
+    width: 100%;
+    align-items: stretch;
+  }
+  .aside {
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,.5);
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: #38404f;
+  }
+  .aside b { color: var(--ink); }
+  .aside .h {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; letter-spacing: 1.7px; text-transform: uppercase;
+    color: var(--muted); display: block; margin-bottom: 6px;
+  }
+
+  /* tension board callout */
+  .tension {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin-top: 10px;
+  }
+  .tension-item {
+    font-family: "Instrument Serif", serif;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid var(--line);
+  }
+  .tension-item .k {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px; color: var(--muted);
+    letter-spacing: 1.4px; text-transform: uppercase;
+    display: block; margin-bottom: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- ===== Header ===== -->
+  <div class="head">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <h1>Atlas<em>Brief</em></h1>
+        <div style="font-size:12.5px;color:#38404f;margin-top:4px;">
+          AI Travel Briefing Room · Architecture
+        </div>
+      </div>
+    </div>
+    <div class="head-meta">
+      <b>Smart Travel Planner</b>
+      Week 4 · SE Factory · 2026-05-02<br />
+      one&nbsp;query · three&nbsp;tools · one&nbsp;defended&nbsp;brief
+    </div>
+  </div>
+
+  <div class="stack">
+
+    <!-- ===== 1. User & Frontend ===== -->
+    <div class="card accent accent-slate card-pad">
+      <span class="num"><span class="dot">1</span> Browser · Single-page briefing room</span>
+      <div class="card-title">
+        <h3>React + Vite + TypeScript frontend</h3>
+        <div class="label">localhost:5173</div>
+      </div>
+      <div class="lead">
+        One question, no checkboxes. Hero · auth pill · prompt console · Trip DNA · agent timeline ·
+        <b>Decision Tension Board</b> · executive memo · evidence drawer with the real tool trace.
+      </div>
+      <div class="chips">
+        <span class="chip s">JWT in localStorage</span>
+        <span class="chip s">cinematic prompt console</span>
+        <span class="chip s">offline-demo fallback</span>
+        <span class="chip s">a11y · prefers-reduced-motion</span>
+      </div>
+    </div>
+
+    <div class="arrow" aria-hidden></div>
+
+    <!-- ===== 2. Backend ===== -->
+    <div class="row-with-aside">
+      <div class="card accent accent-brass card-pad">
+        <span class="num"><span class="dot">2</span> FastAPI backend · async, DI, lifespan singletons</span>
+        <div class="card-title">
+          <h3>POST /api/v1/trip-briefs</h3>
+          <div class="label">localhost:8000</div>
+        </div>
+        <div class="lead">
+          One small endpoint runs the agent, persists the run, then fires the webhook in the background.
+          Auth (<code>bcrypt</code> + JWT) is wired but optional. Pydantic validates at every boundary.
+        </div>
+        <div class="chips">
+          <span class="chip b">async SQLAlchemy 2.x</span>
+          <span class="chip b">httpx.AsyncClient</span>
+          <span class="chip b">pydantic-settings</span>
+          <span class="chip b">structlog-style JSON logs</span>
+          <span class="chip b">FastAPI lifespan loads ML + agent once</span>
+        </div>
+      </div>
+      <div class="aside">
+        <span class="h">why FastAPI?</span>
+        <b>Async everywhere</b>: agents are I/O-bound; <code>requests.get</code> in a route would block the loop.
+        DI (<code>Depends</code>) keeps the LLM client, DB session, and current user injectable for tests.
+      </div>
+    </div>
+
+    <div class="arrow" aria-hidden></div>
+
+    <!-- ===== 3. LangGraph Agent ===== -->
+    <div class="row-with-aside">
+      <div class="card accent accent-plum card-pad">
+        <span class="num"><span class="dot">3</span> LangGraph agent · planner → executor → synthesizer</span>
+        <div class="card-title">
+          <h3>plan ▸ run three tools ▸ synthesize</h3>
+          <div class="label">explicit allowlist</div>
+        </div>
+        <div class="lead">
+          The planner is a <b>deterministic ranker</b> over <code>data/destinations.csv</code> — no model hop
+          for mechanical work. It picks the destination, the counterfactual, and the feature profile the ML
+          tool will classify. Only three tool names are accepted; anything else is refused.
+        </div>
+        <div class="chips">
+          <span class="chip p">backend/app/agent/graph.py</span>
+          <span class="chip p">backend/app/agent/registry.py · ALLOWED_TOOL_NAMES</span>
+          <span class="chip p">structured tool errors → LLM can reason about them</span>
+        </div>
+      </div>
+      <div class="aside">
+        <span class="h">why planner-then-executor?</span>
+        Tool order is fixed (<i>RAG → ML → live</i>) and the tools don't depend on each other.
+        ReAct's reflective loops are wasted spend on a coarse, deterministic flow.
+        Defended in <code>docs/PLANNER_VS_REACT.md</code>.
+      </div>
+    </div>
+
+    <!-- fanout to three tools -->
+    <div class="fanout" aria-hidden>
+      <svg viewBox="0 0 1180 56" preserveAspectRatio="none">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2a323f"></path>
+          </marker>
+        </defs>
+        <path d="M 590 0 C 590 28, 197 28, 197 56" stroke="#2a323f" stroke-width="2" fill="none" marker-end="url(#arr)"></path>
+        <path d="M 590 0 L 590 56" stroke="#2a323f" stroke-width="2" fill="none" marker-end="url(#arr)"></path>
+        <path d="M 590 0 C 590 28, 983 28, 983 56" stroke="#2a323f" stroke-width="2" fill="none" marker-end="url(#arr)"></path>
+      </svg>
+    </div>
+
+    <!-- ===== 4. Three tools side-by-side ===== -->
+    <div class="card row">
+      <div class="col tool">
+        <div class="tool-h">
+          <div class="tool-icon p">📚</div>
+          <div>
+            <div class="tool-name">RAG</div>
+            <div class="tool-fn">retrieve_destination_knowledge</div>
+          </div>
+        </div>
+        <div class="tool-body">
+          28 markdown briefs across 14 destinations, 900-char chunks with 150-char overlap,
+          384-dim embeddings stored in <b>Postgres + pgvector</b> with a cosine ivfflat index.
+          DB-first, deterministic local index as fallback.
+        </div>
+        <div class="chips">
+          <span class="chip p">pgvector cosine</span>
+          <span class="chip p">top-k retrieval</span>
+        </div>
+        <div class="tool-meta">trace → "2 chunks via pgvector; top: Madeira"</div>
+      </div>
+
+      <div class="col tool">
+        <div class="tool-h">
+          <div class="tool-icon b">🧠</div>
+          <div>
+            <div class="tool-name">ML classifier</div>
+            <div class="tool-fn">classify_travel_style</div>
+          </div>
+        </div>
+        <div class="tool-body">
+          scikit-learn <b><code>Pipeline(StandardScaler → clf)</code></b>, three baselines + GridSearchCV on RF,
+          stratified 5-fold CV, winner saved with <code>joblib</code>. Loaded once at FastAPI startup, falls back
+          to deterministic rules if the file fails to load.
+        </div>
+        <div class="chips">
+          <span class="chip b">macro-F1 0.959</span>
+          <span class="chip b">131 hand-labeled rows</span>
+          <span class="chip b">6 classes</span>
+        </div>
+        <div class="tool-meta">trace → "Predicted Adventure (joblib, conf 0.93)"</div>
+      </div>
+
+      <div class="col tool">
+        <div class="tool-h">
+          <div class="tool-icon v">🌤</div>
+          <div>
+            <div class="tool-name">Live conditions</div>
+            <div class="tool-fn">fetch_live_conditions</div>
+          </div>
+        </div>
+        <div class="tool-body">
+          Async <b>Open-Meteo</b> lookup behind a <code>TTLCache</code> (600 s, single-flight stampede protection).
+          Deterministic fallback for offline demos. Outputs a 0–100 reality-pressure score plus a weather signal.
+        </div>
+        <div class="chips">
+          <span class="chip v">httpx.AsyncClient</span>
+          <span class="chip v">retry · timeout</span>
+        </div>
+        <div class="tool-meta">trace → "Pressure 74/100 · stable July warmth"</div>
+      </div>
+    </div>
+
+    <div class="arrow" aria-hidden></div>
+
+    <!-- ===== 5. Two-model routing + LangSmith ===== -->
+    <div class="row-with-aside">
+      <div class="card accent accent-terra card-pad">
+        <span class="num"><span class="dot">5</span> Two-model routing + observability</span>
+        <div class="card-title">
+          <h3>cheap (deterministic) · strong (Anthropic / OpenAI)</h3>
+          <div class="label">backend/app/llm/</div>
+        </div>
+        <div class="lead">
+          The synthesizer combines the three tool outputs into the <b>Decision Tension Board</b>.
+          The strong step calls real Anthropic Haiku/Sonnet (or OpenAI) when a key is set; otherwise
+          a deterministic verdict. Real <code>tokens_in</code>, <code>tokens_out</code>, and
+          <code>cost_usd</code> are logged per request.
+        </div>
+        <div class="chips">
+          <span class="chip t">live-measured: $0.001361 (Haiku, 1 query)</span>
+          <span class="chip t">PRICE_TABLE_PER_MTOKENS</span>
+          <span class="chip t">LangSmith trace when LANGCHAIN_API_KEY set</span>
+        </div>
+      </div>
+      <div class="aside">
+        <span class="h">decision tension board</span>
+        <div class="tension">
+          <div class="tension-item"><span class="k">Dream Fit</span>84</div>
+          <div class="tension-item"><span class="k">Reality Pressure</span>74</div>
+        </div>
+        <div style="margin-top:10px;">
+          <i>Final verdict</i> names the tradeoff;
+          <i>"Why not the obvious pick?"</i> rejects the mainstream alternative.
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow" aria-hidden></div>
+
+    <!-- ===== 6. Persistence ===== -->
+    <div class="card accent accent-verd card-pad">
+      <span class="num"><span class="dot">6</span> Persistence · async SQLAlchemy 2.x · Alembic-versioned</span>
+      <div class="card-title">
+        <h3>Postgres 16 + pgvector</h3>
+        <div class="label">named volume: pgdata</div>
+      </div>
+      <div class="lead">
+        Six tables, all created from a single hand-authored Alembic migration that enables
+        <code>CREATE EXTENSION vector</code> first. The named volume keeps embeddings, runs,
+        and webhook history across container restarts.
+      </div>
+      <div class="tables">
+        <span class="table-pill">users</span>
+        <span class="table-pill">agent_runs</span>
+        <span class="table-pill">tool_calls</span>
+        <span class="table-pill">webhook_deliveries</span>
+        <span class="table-pill">destination_documents</span>
+        <span class="table-pill vector">document_chunks · Vector(384) · cosine ivfflat</span>
+      </div>
+    </div>
+
+    <div class="arrow" aria-hidden></div>
+
+    <!-- ===== 7. Webhook ===== -->
+    <div class="card accent accent-terra webhook">
+      <div class="col">
+        <span class="num"><span class="dot">7</span> Webhook delivery (background task)</span>
+        <div class="card-title">
+          <h3>Discord channel · timeout · retry/backoff</h3>
+          <div class="label">backend/app/webhooks/dispatcher.py</div>
+        </div>
+        <div class="lead">
+          The brief lands in a real Discord channel within seconds of the user seeing it.
+          Webhook failure is intentionally <b>isolated</b> from the user-facing response.
+        </div>
+        <div class="chips">
+          <span class="chip t">async httpx</span>
+          <span class="chip t">3 attempts · exponential backoff</span>
+          <span class="chip t">structured failure log</span>
+        </div>
+      </div>
+      <div class="col">
+        <span class="num"><span class="dot">✓</span> Live-verified · 2026-05-01</span>
+        <div class="card-title">
+          <h3>real proof, no fake screenshots</h3>
+          <div class="label">cost_usd · 0.001361</div>
+        </div>
+        <div class="lead">
+          Real Anthropic call captured (Haiku · 383 in / 242 out tokens). Real Discord webhook delivered
+          (<code>status_code: 204</code>). Real LangSmith run URL preserved in
+          <code>CODE_REVIEW_NOTES.md</code>. Live pgvector ingest verified under
+          <code>docker compose up</code>.
+        </div>
+        <div class="chips">
+          <span class="chip">CI green · 58 pytest tests</span>
+          <span class="chip">ruff · black · pre-commit</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Legend ===== -->
+    <div class="legend">
+      <div>
+        <h4>Color = layer</h4>
+        <div class="legend-row"><span class="swatch" style="background:#2d3a52"></span> Frontend (browser)</div>
+        <div class="legend-row"><span class="swatch" style="background:#c98a3b"></span> FastAPI backend</div>
+        <div class="legend-row"><span class="swatch" style="background:#6b4a8a"></span> Agent + RAG</div>
+        <div class="legend-row"><span class="swatch" style="background:#c25a3f"></span> LLM router · webhook</div>
+        <div class="legend-row"><span class="swatch" style="background:#2f8b80"></span> Postgres · live conditions</div>
+      </div>
+      <div>
+        <h4>One-command stack</h4>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:11.5px;background:#1a1f29;color:#f7f2e6;padding:10px 12px;border-radius:8px;">
+          $ docker compose up -d --build
+        </p>
+        <p>Brings up <b>db · backend · frontend</b> in &lt; 1 min. Backend creates the
+          tables, seeds RAG into pgvector, serves <code>/health</code>, and answers
+          <code>POST /api/v1/trip-briefs</code> with a real <code>via pgvector</code> trace.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
