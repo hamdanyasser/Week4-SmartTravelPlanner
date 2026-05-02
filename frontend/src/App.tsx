@@ -1,10 +1,16 @@
 // AtlasBrief — single-page briefing room.
 //
 // Reads top-to-bottom as the user's experience:
-//   topbar (brand · status · auth) → hero → intake console → trip DNA →
-//   mission timeline → tension board → executive memo → footer · evidence drawer.
+//   atlas backdrop (fixed) → topbar (brand · status · auth) → hero →
+//   intake console → trip DNA → mission timeline → tension board →
+//   executive memo → footer · evidence drawer.
+//
+// The atmosphere layer (AtlasBackdrop) is fixed behind everything;
+// cursor position is tracked here and pushed in as parallax props so
+// it stays a single source of truth. Reduced-motion users skip it.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { AtlasBackdrop } from "./components/AtlasBackdrop";
 import { AuthPanel } from "./components/AuthPanel";
 import { Brand } from "./components/Brand";
 import { CinematicPromptBox } from "./components/CinematicPromptBox";
@@ -27,9 +33,28 @@ export default function App() {
   const [query, setQuery] = useState(GOLDEN_DEMO_QUERY);
   const trip = useTripBrief(TIMELINE_STAGES.length);
   const auth = useAuth();
+  const [parallax, setParallax] = useState({ x: 0, y: 0 });
+
+  // Mouse parallax for the celestial atlas. Bypassed by reduced-motion users.
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    const onMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * -24;
+      const y = (e.clientY / window.innerHeight - 0.5) * -16;
+      setParallax({ x, y });
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
 
   const showEmpty = !trip.brief && !trip.loading && !trip.error;
   const showShimmer = trip.loading && !trip.brief;
+  const isThinking = trip.loading;
 
   const statusLabel =
     trip.mode === "demo"
@@ -53,6 +78,8 @@ export default function App() {
 
   return (
     <>
+      <AtlasBackdrop parallax={parallax} thinking={isThinking} />
+
       <div className="app-shell">
         <header className="topbar">
           <Brand />
