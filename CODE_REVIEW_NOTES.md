@@ -6,6 +6,26 @@ tradeoffs in human terms.
 
 ---
 
+## Cleanup pass addendum — second sweep (2026-05-02)
+
+After the live-stack run confirmed the slim build still ships the golden
+Madeira pick (84/74) and the non-golden ranker still steers
+("Snow ski week with family $4000" → Billund / Helsinki), did a second
+sweep for residual cruft.
+
+- Deleted `docs/demo_story.md` (169-line script for the explicitly-waived
+  demo video; CODE_REVIEW_SURVIVAL covers what to say at review).
+- Replaced MANUAL_PROOF section 3 (3-min recording beat sheet for the
+  same waived video) with a one-paragraph waiver pointer.
+- Dropped the unused `mode` prop on `Hero.tsx` (renamed `_mode` was
+  effectively dead) plus the matching call site in `App.tsx`.
+
+Verification: `pytest -q` → 58 passed, `npm run build` → clean,
+`ruff check` → clean, live `POST /trip-briefs` against the running stack
+returns the same Madeira/Costa Rica trace.
+
+---
+
 ## Cleanup pass — shrink to smallest defensible surface (2026-05-02)
 
 ### What changed

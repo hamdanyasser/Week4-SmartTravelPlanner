@@ -2,12 +2,6 @@
 // metrics. The status pill and brand mark live in the topbar (App.tsx),
 // not here, so this section is purely editorial.
 
-import type { BriefMode } from "../hooks/useTripBrief";
-
-interface HeroProps {
-  mode: BriefMode | null;
-}
-
 const METRICS: Array<{ label: string; value: string; em?: string; hint: string }> = [
   {
     label: "Briefings drafted",
@@ -35,7 +29,7 @@ const METRICS: Array<{ label: string; value: string; em?: string; hint: string }
   },
 ];
 
-export function Hero({ mode: _mode }: HeroProps) {
+export function Hero() {
   // The kinetic title — every word fades up on its own beat.
   const line1 = ["From", "a", "vague"];
   const line2 = ["to", "a", "defended"];

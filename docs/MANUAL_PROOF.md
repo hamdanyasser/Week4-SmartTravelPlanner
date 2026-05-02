@@ -93,30 +93,12 @@ estimated number, replace it with the value you observed.
 
 ---
 
-## 3. Record `docs/demo.mp4` — 3-minute end-to-end demo
+## 3. 3-minute demo video — WAIVED
 
-**What it proves:** Brief deliverable item "3-minute demo video".
-
-Suggested 3-minute beat sheet (script lives in
-[`docs/demo_story.md`](demo_story.md)):
-
-| Time   | Beat                                                                  |
-|--------|-----------------------------------------------------------------------|
-| 0:00 – 0:20 | Open `http://localhost:5173`. The hero, status pill, and prompt console are visible. Read the eyebrow tag aloud. |
-| 0:20 – 0:35 | Type / paste the golden query: *"I have two weeks off in July and around $1,500. I want somewhere warm, not too touristy, and I like hiking."* |
-| 0:35 – 0:55 | Submit (Cmd/Ctrl+Enter). Show the Trip DNA panel filling in and the Mission Timeline animating through the seven stages. |
-| 0:55 – 1:35 | The Decision Tension Board appears — point out Dream Fit (84) on brass, Reality Pressure on verdigris, the Final Verdict, and the counterfactual (Costa Rica / Monteverde). |
-| 1:35 – 2:00 | Scroll to the Travel Brief Memo — show "Why it fits", "Risks", "Booking advice". |
-| 2:00 – 2:30 | Open the Evidence Drawer — read the three tool summaries, point out the real `cost_usd` and `latency_ms`. |
-| 2:30 – 2:50 | Cut to a Discord channel showing the webhook that fired. (Skip if no webhook is configured.) |
-| 2:50 – 3:00 | Cut to the LangSmith run page showing the trace. Save. |
-
-```bash
-# Recording tools that work fine: macOS built-in screen recorder, OBS,
-# Loom (export to mp4), Windows Game Bar (Win+G).
-# Save the file as docs/demo.mp4 in the repo, or paste a public link
-# into README.md § Demo / screenshots.
-```
+The brief deliverable "3-minute demo video" was explicitly waived by user
+direction on 2026-05-01. The same content the video would have shown is
+proven by the LangSmith trace (§ 1), the Discord delivery (§ 5), and the
+live Docker stack run (§ 4).
 
 ---
 

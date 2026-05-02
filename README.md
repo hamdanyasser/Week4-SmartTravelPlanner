@@ -29,7 +29,6 @@ The visual identity uses a "cartographer's atlas" palette — warm parchment on
 deep ink, with **brass** (#E0A458) for Dream Fit, **verdigris** (#4DBDB1) for
 Reality Pressure, and **terracotta** (#E27A5C) for the counterfactual.
 
-- Walkthrough script: [`docs/demo_story.md`](docs/demo_story.md).
 - Architecture diagram + per-request flow: [`docs/architecture.md`](docs/architecture.md).
 - Reviewer survival guide: [`docs/CODE_REVIEW_SURVIVAL.md`](docs/CODE_REVIEW_SURVIVAL.md).
 - Reproduce the live proofs: [`docs/MANUAL_PROOF.md`](docs/MANUAL_PROOF.md).
@@ -320,11 +319,13 @@ to `http://localhost:8000`. If the backend is unreachable, the page renders
 a clearly-labeled **offline demo briefing** (the demo banner shows above the
 Tension Board, and the Evidence drawer reflects `Mode: Offline demo`).
 
-### Demo / screenshots
+### Demo / proof artifacts
 
-The walkthrough script is in [`docs/demo_story.md`](docs/demo_story.md).
-Screenshots and the 3-minute demo video will be added before submission;
-they live under `docs/`.
+The 3-minute demo video was waived (2026-05-01). The same content is
+covered by the live LangSmith trace, the live Discord delivery, and the
+live Docker stack run captured in
+[`docs/MANUAL_PROOF.md`](docs/MANUAL_PROOF.md) and
+[`CODE_REVIEW_NOTES.md`](CODE_REVIEW_NOTES.md).
 
 ## ML — travel-style classifier
 

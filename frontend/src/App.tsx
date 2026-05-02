@@ -65,7 +65,7 @@ export default function App() {
           </div>
         </header>
 
-        <Hero mode={trip.mode} />
+        <Hero />
 
         <CinematicPromptBox
           query={query}
