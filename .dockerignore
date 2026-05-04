@@ -1,0 +1,15 @@
+.git
+.github
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
+backend/.venv
+frontend/node_modules
+frontend/dist
+frontend/.vite
+docs
+CODE_REVIEW_NOTES.md
+REQUIREMENTS_CHECKLIST.md

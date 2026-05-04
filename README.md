@@ -32,6 +32,17 @@ Reality Pressure, and **terracotta** (#E27A5C) for the counterfactual.
 - Architecture diagram + per-request flow: [`docs/architecture.md`](docs/architecture.md).
 - Reviewer survival guide: [`docs/CODE_REVIEW_SURVIVAL.md`](docs/CODE_REVIEW_SURVIVAL.md).
 - Reproduce the live proofs: [`docs/MANUAL_PROOF.md`](docs/MANUAL_PROOF.md).
+- Deployment guide: [`docs/deployment.md`](docs/deployment.md).
+
+## Live deployment
+
+- Frontend: <https://atlasbrief-frontend.vercel.app>
+- Backend health: <https://atlasbrief-backend.vercel.app/health>
+
+The current Vercel deployment runs in deterministic fallback mode without a
+production Postgres/pgvector database. That keeps the anonymous trip-brief demo
+available online; auth persistence and database-backed RAG should move to
+Supabase/Postgres in the next phase.
 
 ## Repository layout
 

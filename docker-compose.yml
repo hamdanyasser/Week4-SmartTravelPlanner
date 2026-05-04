@@ -16,7 +16,8 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: atlasbrief_backend
     env_file:
       - ./backend/.env
@@ -26,13 +27,15 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./backend:/app
-      - ./data:/data:ro
+      - ./backend:/app/backend
+      - ./data:/app/data:ro
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: dev
     container_name: atlasbrief_frontend
     environment:
       VITE_API_BASE_URL: http://localhost:8000
